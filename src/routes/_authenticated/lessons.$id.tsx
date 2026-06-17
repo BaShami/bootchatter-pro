@@ -22,7 +22,7 @@ import {
   useLessonChunkCount,
 } from "@/hooks/use-lessons";
 import { processLesson, setLessonPublished } from "@/lib/lessons.functions";
-import { parseDocument } from "@/lib/parse-document.client";
+
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
