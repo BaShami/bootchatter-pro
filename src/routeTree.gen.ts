@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated/students'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedBootcampsRouteImport } from './routes/_authenticated/bootcamps'
+import { Route as ApiPublicAskQuestionRouteImport } from './routes/api/public/ask-question'
 import { Route as AuthenticatedBootcampsIdRouteImport } from './routes/_authenticated/bootcamps.$id'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -52,6 +53,11 @@ const AuthenticatedBootcampsRoute = AuthenticatedBootcampsRouteImport.update({
   path: '/bootcamps',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiPublicAskQuestionRoute = ApiPublicAskQuestionRouteImport.update({
+  id: '/api/public/ask-question',
+  path: '/api/public/ask-question',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedBootcampsIdRoute =
   AuthenticatedBootcampsIdRouteImport.update({
     id: '/$id',
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/students': typeof AuthenticatedStudentsRoute
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
+  '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/students': typeof AuthenticatedStudentsRoute
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
+  '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/students': typeof AuthenticatedStudentsRoute
   '/_authenticated/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
+  '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -98,6 +107,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/students'
     | '/bootcamps/$id'
+    | '/api/public/ask-question'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/students'
     | '/bootcamps/$id'
+    | '/api/public/ask-question'
   id:
     | '__root__'
     | '/'
@@ -117,6 +128,7 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/students'
     | '/_authenticated/bootcamps/$id'
+    | '/api/public/ask-question'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -124,6 +136,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublicAskQuestionRoute: typeof ApiPublicAskQuestionRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -177,6 +190,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBootcampsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/ask-question': {
+      id: '/api/public/ask-question'
+      path: '/api/public/ask-question'
+      fullPath: '/api/public/ask-question'
+      preLoaderRoute: typeof ApiPublicAskQuestionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/bootcamps/$id': {
       id: '/_authenticated/bootcamps/$id'
       path: '/$id'
@@ -221,6 +241,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublicAskQuestionRoute: ApiPublicAskQuestionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

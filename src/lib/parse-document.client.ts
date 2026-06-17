@@ -16,10 +16,11 @@ export async function parseDocument(file: File): Promise<ParsedDoc> {
   }
 
   if (name.endsWith(".docx") || type.includes("officedocument.wordprocessingml")) {
+    // @ts-expect-error - mammoth browser build ships without TS types
     const mammoth = await import("mammoth/mammoth.browser");
     const arrayBuffer = await file.arrayBuffer();
     const { value } = await mammoth.extractRawText({ arrayBuffer });
-    return { text: normalize(value) };
+    return { text: normalize(value as string) };
   }
 
   if (name.endsWith(".pdf") || type === "application/pdf") {
@@ -31,10 +32,10 @@ export async function parseDocument(file: File): Promise<ParsedDoc> {
 
 async function parsePdf(file: File): Promise<ParsedDoc> {
   const pdfjs = await import("pdfjs-dist");
-  // Use a workerless build via inline worker URL (legacy build for broad compatibility)
-  // @ts-expect-error - pdf.worker.mjs has no types
-  const workerModule = await import("pdfjs-dist/build/pdf.worker.mjs?url");
-  pdfjs.GlobalWorkerOptions.workerSrc = workerModule.default;
+  const workerModule = await import(
+    /* @vite-ignore */ "pdfjs-dist/build/pdf.worker.mjs?url"
+  );
+  pdfjs.GlobalWorkerOptions.workerSrc = (workerModule as { default: string }).default;
 
   const data = new Uint8Array(await file.arrayBuffer());
   const doc = await pdfjs.getDocument({ data }).promise;

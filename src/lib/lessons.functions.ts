@@ -118,7 +118,12 @@ Produce JSON with this exact shape:
       }
     }
 
-    const update: Record<string, unknown> = { status: "ready" };
+    const update: Partial<{
+      status: "ready";
+      summary: string;
+      learning_objectives: string;
+      key_topics: string[];
+    }> = { status: "ready" };
     if (metadata.summary) update.summary = metadata.summary;
     if (metadata.learning_objectives) update.learning_objectives = metadata.learning_objectives;
     if (metadata.key_topics) update.key_topics = metadata.key_topics;
