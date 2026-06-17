@@ -15,6 +15,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/integrations/supabase/types";
+
+type AuthedSupabase = SupabaseClient<Database>;
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _typeAnchor = createClient;
 
 const AskInput = z.object({
   student_id: z.string().uuid(),
