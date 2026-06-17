@@ -9,6 +9,7 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, usePermissions } from "@/hooks/use-auth";

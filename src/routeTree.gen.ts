@@ -19,6 +19,7 @@ import { Route as AuthenticatedBootcampsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedLessonsIndexRouteImport } from './routes/_authenticated/lessons.index'
 import { Route as ApiPublicAskQuestionRouteImport } from './routes/api/public/ask-question'
 import { Route as ApiPublic_internalTestsRouteImport } from './routes/api/public/__internal-tests'
+import { Route as AuthenticatedLessonsTestBrainRouteImport } from './routes/_authenticated/lessons.test-brain'
 import { Route as AuthenticatedLessonsIdRouteImport } from './routes/_authenticated/lessons.$id'
 import { Route as AuthenticatedBootcampsIdRouteImport } from './routes/_authenticated/bootcamps.$id'
 
@@ -72,6 +73,12 @@ const ApiPublic_internalTestsRoute = ApiPublic_internalTestsRouteImport.update({
   path: '/api/public',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedLessonsTestBrainRoute =
+  AuthenticatedLessonsTestBrainRouteImport.update({
+    id: '/lessons/test-brain',
+    path: '/lessons/test-brain',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedLessonsIdRoute = AuthenticatedLessonsIdRouteImport.update({
   id: '/lessons/$id',
   path: '/lessons/$id',
@@ -93,6 +100,7 @@ export interface FileRoutesByFullPath {
   '/students': typeof AuthenticatedStudentsRoute
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
+  '/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
   '/api/public': typeof ApiPublic_internalTestsRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
   '/lessons/': typeof AuthenticatedLessonsIndexRoute
@@ -106,6 +114,7 @@ export interface FileRoutesByTo {
   '/students': typeof AuthenticatedStudentsRoute
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
+  '/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
   '/api/public': typeof ApiPublic_internalTestsRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
   '/lessons': typeof AuthenticatedLessonsIndexRoute
@@ -121,6 +130,7 @@ export interface FileRoutesById {
   '/_authenticated/students': typeof AuthenticatedStudentsRoute
   '/_authenticated/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/_authenticated/lessons/$id': typeof AuthenticatedLessonsIdRoute
+  '/_authenticated/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
   '/api/public/__internal-tests': typeof ApiPublic_internalTestsRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
   '/_authenticated/lessons/': typeof AuthenticatedLessonsIndexRoute
@@ -136,6 +146,7 @@ export interface FileRouteTypes {
     | '/students'
     | '/bootcamps/$id'
     | '/lessons/$id'
+    | '/lessons/test-brain'
     | '/api/public'
     | '/api/public/ask-question'
     | '/lessons/'
@@ -149,6 +160,7 @@ export interface FileRouteTypes {
     | '/students'
     | '/bootcamps/$id'
     | '/lessons/$id'
+    | '/lessons/test-brain'
     | '/api/public'
     | '/api/public/ask-question'
     | '/lessons'
@@ -163,6 +175,7 @@ export interface FileRouteTypes {
     | '/_authenticated/students'
     | '/_authenticated/bootcamps/$id'
     | '/_authenticated/lessons/$id'
+    | '/_authenticated/lessons/test-brain'
     | '/api/public/__internal-tests'
     | '/api/public/ask-question'
     | '/_authenticated/lessons/'
@@ -249,6 +262,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublic_internalTestsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/lessons/test-brain': {
+      id: '/_authenticated/lessons/test-brain'
+      path: '/lessons/test-brain'
+      fullPath: '/lessons/test-brain'
+      preLoaderRoute: typeof AuthenticatedLessonsTestBrainRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/lessons/$id': {
       id: '/_authenticated/lessons/$id'
       path: '/lessons/$id'
@@ -285,6 +305,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRoute
   AuthenticatedLessonsIdRoute: typeof AuthenticatedLessonsIdRoute
+  AuthenticatedLessonsTestBrainRoute: typeof AuthenticatedLessonsTestBrainRoute
   AuthenticatedLessonsIndexRoute: typeof AuthenticatedLessonsIndexRoute
 }
 
@@ -293,6 +314,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRoute,
   AuthenticatedLessonsIdRoute: AuthenticatedLessonsIdRoute,
+  AuthenticatedLessonsTestBrainRoute: AuthenticatedLessonsTestBrainRoute,
   AuthenticatedLessonsIndexRoute: AuthenticatedLessonsIndexRoute,
 }
 
