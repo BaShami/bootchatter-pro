@@ -625,6 +625,22 @@ export type Database = {
         Args: { _bootcamp_id: string; _user_id: string }
         Returns: boolean
       }
+      match_lesson_chunks: {
+        Args: {
+          match_count?: number
+          min_similarity?: number
+          p_bootcamp_id: string
+          query_embedding: string
+        }
+        Returns: {
+          chunk_id: string
+          chunk_index: number
+          chunk_text: string
+          lesson_id: string
+          lesson_title: string
+          similarity: number
+        }[]
+      }
     }
     Enums: {
       announcement_audience: "all" | "specific"
