@@ -121,8 +121,13 @@ export async function syncLessonToVectorStore(
 
   await supabaseAdmin
     .from("lessons")
-    .update({ openai_indexing_status: "uploading", openai_sync_error: null })
+    .update({
+      openai_indexing_status: "uploading",
+      openai_sync_error: null,
+      indexing_started_at: new Date().toISOString(),
+    })
     .eq("id", lessonId);
+
 
   try {
     const vsId = await ensureBootcampVectorStore(lesson.bootcamp_id);
@@ -158,10 +163,12 @@ export async function syncLessonToVectorStore(
           openai_indexing_status: "ready",
           openai_indexed_at: new Date().toISOString(),
           last_synced_at: new Date().toISOString(),
+          indexing_started_at: null,
         })
         .eq("id", lessonId);
       return { ok: true, status: "ready", file_id: lesson.openai_file_id, unchanged: true };
     }
+
 
     // Upload new file
     const filename = `lesson-${lesson.id}.md`;
@@ -190,10 +197,12 @@ export async function syncLessonToVectorStore(
         content_hash: doc.hash,
         openai_indexing_status: finalStatus,
         openai_indexed_at: finalStatus === "ready" ? new Date().toISOString() : null,
-        last_synced_at: new Date().toISOString(),
+        last_synced_at: finalStatus === "ready" ? new Date().toISOString() : null,
+        indexing_started_at: finalStatus === "ready" ? null : new Date().toISOString(),
         openai_sync_error: null,
       })
       .eq("id", lessonId);
+
 
     // Best-effort cleanup of old file
     if (previousFileId && previousFileId !== uploaded.id) {
@@ -214,11 +223,112 @@ export async function syncLessonToVectorStore(
     const msg = err instanceof Error ? err.message : String(err);
     await supabaseAdmin
       .from("lessons")
-      .update({ openai_indexing_status: "error", openai_sync_error: msg })
+      .update({
+        openai_indexing_status: "error",
+        openai_sync_error: msg,
+        indexing_started_at: null,
+      })
       .eq("id", lessonId);
     return { ok: false, status: "error", error: msg };
   }
 }
+
+/**
+ * Reconciles a single lesson's indexing status by asking OpenAI for the
+ * vector-store-file's current state. Safe to call repeatedly. Returns the
+ * mapped status. Does NOT throw — returns "skipped" / "error" instead.
+ *
+ * Enforces a 15-minute hard timeout using `indexing_started_at`.
+ */
+export type ReconcileOutcome =
+  | { outcome: "skipped"; reason: string }
+  | { outcome: "still_indexing" }
+  | { outcome: "ready" }
+  | { outcome: "error"; message: string }
+  | { outcome: "timed_out" };
+
+export async function reconcileLessonIndexingStatus(
+  lessonId: string,
+): Promise<ReconcileOutcome> {
+  const { data: lesson } = await supabaseAdmin
+    .from("lessons")
+    .select(
+      "id, bootcamp_id, openai_file_id, openai_indexing_status, indexing_started_at",
+    )
+    .eq("id", lessonId)
+    .maybeSingle();
+  if (!lesson) return { outcome: "skipped", reason: "lesson not found" };
+  const s = lesson.openai_indexing_status;
+  if (s !== "uploading" && s !== "indexing") {
+    return { outcome: "skipped", reason: `status=${s}` };
+  }
+  if (!lesson.openai_file_id) {
+    return { outcome: "skipped", reason: "no openai_file_id" };
+  }
+
+  // Hard timeout: 15 minutes
+  if (lesson.indexing_started_at) {
+    const startedMs = new Date(lesson.indexing_started_at).getTime();
+    if (Number.isFinite(startedMs) && Date.now() - startedMs > 15 * 60 * 1000) {
+      await supabaseAdmin
+        .from("lessons")
+        .update({
+          openai_indexing_status: "error",
+          openai_sync_error: "indexing timed out after 15 minutes",
+          indexing_started_at: null,
+        })
+        .eq("id", lessonId);
+      return { outcome: "timed_out" };
+    }
+  }
+
+  const { data: settings } = await supabaseAdmin
+    .from("bootcamp_settings")
+    .select("openai_vector_store_id")
+    .eq("bootcamp_id", lesson.bootcamp_id)
+    .maybeSingle();
+  if (!settings?.openai_vector_store_id) {
+    return { outcome: "skipped", reason: "no vector store" };
+  }
+
+  try {
+    const f = await openaiGetVSFile(settings.openai_vector_store_id, lesson.openai_file_id);
+    if (f.status === "completed") {
+      const now = new Date().toISOString();
+      await supabaseAdmin
+        .from("lessons")
+        .update({
+          openai_indexing_status: "ready",
+          openai_indexed_at: now,
+          last_synced_at: now,
+          indexing_started_at: null,
+          openai_sync_error: null,
+        })
+        .eq("id", lessonId);
+      return { outcome: "ready" };
+    }
+    if (f.status === "failed" || f.status === "cancelled") {
+      await supabaseAdmin
+        .from("lessons")
+        .update({
+          openai_indexing_status: "error",
+          openai_sync_error: f.last_error?.message ?? f.status,
+          indexing_started_at: null,
+        })
+        .eq("id", lessonId);
+      return { outcome: "error", message: f.last_error?.message ?? f.status };
+    }
+    // still in_progress
+    await supabaseAdmin
+      .from("lessons")
+      .update({ openai_indexing_status: "indexing" })
+      .eq("id", lessonId);
+    return { outcome: "still_indexing" };
+  } catch (e) {
+    return { outcome: "error", message: (e as Error).message };
+  }
+}
+
 
 /** Mark file as unpublished and detach. Idempotent. */
 export async function unsyncLessonFromVectorStore(lessonId: string): Promise<void> {
