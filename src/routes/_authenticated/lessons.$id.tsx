@@ -426,6 +426,8 @@ function LessonDetail() {
             </CardContent>
           </Card>
 
+          <LessonSyncCard lessonId={id} />
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">Files</CardTitle>
