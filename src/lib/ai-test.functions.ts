@@ -390,3 +390,89 @@ async function runOne(
     };
   }
 }
+
+/**
+ * Direct parser unit test. Feeds the exact OpenAI envelope shape we observed
+ * in production (where every result carries `text` at the top level, not
+ * inside `content[].text`) into the pure parser. Catches the bug where the
+ * parser only reads `content[].text` and silently discards every FS result.
+ */
+export const runFileSearchParserTest = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requirePlatformAdmin(context.supabase, context.userId);
+    const { extractEvidenceFromFileSearch } = await import("@/lib/ask-question.server");
+
+    const LESSON_A = "1d1ed7d4-f5bd-4ad6-a668-9defdb5a5015";
+    const LESSON_B = "22222222-2222-2222-2222-222222222222";
+    const LESSON_FOREIGN = "ffffffff-ffff-ffff-ffff-ffffffffffff";
+
+    const envelope = {
+      id: "resp_test",
+      output: [
+        {
+          type: "file_search_call",
+          id: "fs1",
+          status: "completed",
+          results: [
+            // top-level text — production shape
+            { file_id: "f1", attributes: { lesson_id: LESSON_A, published: true }, text: "AI agents and workflows summary" },
+            // duplicate of above — must be deduped
+            { file_id: "f1", attributes: { lesson_id: LESSON_A, published: true }, text: "AI agents and workflows summary" },
+            // empty text — must be skipped
+            { file_id: "f1", attributes: { lesson_id: LESSON_A, published: true }, text: "" },
+            // foreign bootcamp lesson — must be skipped
+            { file_id: "f9", attributes: { lesson_id: LESSON_FOREIGN, published: true }, text: "should not appear" },
+            // no lesson_id — must be skipped
+            { file_id: "f0", attributes: { published: true }, text: "no lesson id" },
+          ],
+        },
+        // SECOND file_search_call — must also be walked
+        {
+          type: "file_search_call",
+          id: "fs2",
+          status: "completed",
+          results: [
+            // legacy content[].text shape — fallback path
+            {
+              file_id: "f2",
+              attributes: { lesson_id: LESSON_B, published: true },
+              content: [{ type: "output_text", text: "Lesson B content via content[]" }],
+            },
+          ],
+        },
+      ],
+    } as const;
+
+    const allowed = new Map<string, string>([
+      [LESSON_A, "Lesson A"],
+      [LESSON_B, "Lesson B"],
+    ]);
+
+    const { evidence, rawCount, lessonIdsSeen } = extractEvidenceFromFileSearch({
+      envelope: envelope as Parameters<typeof extractEvidenceFromFileSearch>[0]["envelope"],
+      allowedLessonTitles: allowed,
+      startIndex: 0,
+    });
+
+    const checks: Array<{ name: string; pass: boolean; got: unknown; want: unknown }> = [
+      { name: "walks both file_search_call items (rawCount)", pass: rawCount === 6, got: rawCount, want: 6 },
+      { name: "sees foreign lesson in lessonIdsSeen", pass: lessonIdsSeen.includes(LESSON_FOREIGN), got: lessonIdsSeen, want: "includes foreign" },
+      { name: "emits exactly 2 evidence items", pass: evidence.length === 2, got: evidence.length, want: 2 },
+      { name: "uses top-level text from result 1", pass: evidence[0]?.text === "AI agents and workflows summary", got: evidence[0]?.text, want: "AI agents and workflows summary" },
+      { name: "falls back to content[].text for legacy shape", pass: evidence[1]?.text === "Lesson B content via content[]", got: evidence[1]?.text, want: "Lesson B content via content[]" },
+      { name: "drops foreign-bootcamp lesson", pass: !evidence.some((e) => e.lesson_id === LESSON_FOREIGN), got: evidence.map((e) => e.lesson_id), want: "no foreign id" },
+      { name: "dedupes identical (lesson_id, text)", pass: evidence.filter((e) => e.lesson_id === LESSON_A).length === 1, got: evidence.filter((e) => e.lesson_id === LESSON_A).length, want: 1 },
+      { name: "skips empty text", pass: evidence.every((e) => e.text.length > 0), got: "ok", want: "ok" },
+      { name: "source_ids are FS-1, FS-2", pass: evidence.map((e) => e.source_id).join(",") === "FS-1,FS-2", got: evidence.map((e) => e.source_id), want: ["FS-1", "FS-2"] },
+    ];
+
+    const passed = checks.filter((c) => c.pass).length;
+    return {
+      total: checks.length,
+      passed,
+      failed: checks.length - passed,
+      checks,
+      evidence,
+    };
+  });
