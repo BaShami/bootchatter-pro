@@ -101,7 +101,13 @@ export type SyncResult = {
 
 /** Idempotent full sync. If content_hash unchanged and a file already exists,
  *  re-asserts attributes (e.g. published=true) and returns unchanged=true. */
-export async function syncLessonToVectorStore(lessonId: string, force = false): Promise<SyncResult> {
+export async function syncLessonToVectorStore(
+  lessonId: string,
+  force = false,
+  opts: { waitForReady?: boolean; pollTimeoutMs?: number } = {},
+): Promise<SyncResult> {
+  const waitForReady = opts.waitForReady ?? true;
+  const pollTimeoutMs = opts.pollTimeoutMs ?? 60_000;
   const { data: lesson, error } = await supabaseAdmin
     .from("lessons")
     .select(
