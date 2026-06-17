@@ -8,6 +8,7 @@ import {
   testAskQuestion,
   runRetrievalTestSuite,
   backfillPublishedLessons,
+  runFileSearchParserTest,
 } from "@/lib/ai-test.functions";
 import { CheckCircle2, XCircle, Database } from "lucide-react";
 
