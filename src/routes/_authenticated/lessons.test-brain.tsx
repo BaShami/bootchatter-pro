@@ -4,7 +4,12 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Loader2, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { testAskQuestion } from "@/lib/ai-test.functions";
+import {
+  testAskQuestion,
+  runRetrievalTestSuite,
+  backfillPublishedLessons,
+} from "@/lib/ai-test.functions";
+import { CheckCircle2, XCircle, Database } from "lucide-react";
 
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
