@@ -93,23 +93,28 @@ async function openaiResponses<T = unknown>(body: Record<string, unknown>): Prom
   return (await res.json()) as T;
 }
 
-type ResponsesEnvelope = {
+type FileSearchResult = {
+  file_id?: string;
+  filename?: string;
+  score?: number;
+  attributes?: Record<string, unknown>;
+  text?: string;
+  content?: Array<{ type: string; text?: string }>;
+};
+
+type FileSearchCallItem = {
+  type: "file_search_call";
+  id: string;
+  status: string;
+  queries?: string[];
+  results?: FileSearchResult[];
+};
+
+export type ResponsesEnvelope = {
   id: string;
   output_text?: string;
   output: Array<
-    | {
-        type: "file_search_call";
-        id: string;
-        status: string;
-        queries?: string[];
-        results?: Array<{
-          file_id: string;
-          filename?: string;
-          score?: number;
-          attributes?: Record<string, unknown>;
-          content?: Array<{ type: string; text?: string }>;
-        }>;
-      }
+    | FileSearchCallItem
     | { type: "message"; content: Array<{ type: string; text?: string }> }
     | { type: string; [k: string]: unknown }
   >;
@@ -127,10 +132,70 @@ function envelopeText(env: ResponsesEnvelope): string {
   return "";
 }
 
-function envelopeFileSearchCall(env: ResponsesEnvelope) {
-  return env.output.find((o) => o.type === "file_search_call") as
-    | Extract<ResponsesEnvelope["output"][number], { type: "file_search_call" }>
-    | undefined;
+function envelopeFileSearchCalls(env: ResponsesEnvelope): FileSearchCallItem[] {
+  return env.output.filter(
+    (o): o is FileSearchCallItem => o.type === "file_search_call",
+  );
+}
+
+function envelopeAllFileSearchResults(env: ResponsesEnvelope): FileSearchResult[] {
+  return envelopeFileSearchCalls(env).flatMap((c) => c.results ?? []);
+}
+
+function fsResultText(r: FileSearchResult): string {
+  if (typeof r.text === "string" && r.text.trim()) return r.text.trim();
+  const joined = (r.content ?? [])
+    .map((c) => c.text ?? "")
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+  return joined;
+}
+
+/**
+ * Pure parser for unit testing. Walks ALL file_search_call items and ALL
+ * their results, prefers `result.text`, falls back to `content[].text`,
+ * skips empty text, dedupes by (lesson_id + text), and only emits results
+ * whose lesson_id is in `allowedLessonTitles` (caller validates which
+ * lessons belong to the bootcamp and are published).
+ */
+export function extractEvidenceFromFileSearch(args: {
+  envelope: ResponsesEnvelope;
+  allowedLessonTitles: Map<string, string>;
+  startIndex: number;
+}): { evidence: Evidence[]; rawCount: number; lessonIdsSeen: string[] } {
+  const allResults = envelopeAllFileSearchResults(args.envelope);
+  const lessonIdsSeen = Array.from(
+    new Set(
+      allResults
+        .map((r) => (r.attributes?.lesson_id as string | undefined) ?? null)
+        .filter((v): v is string => !!v),
+    ),
+  );
+
+  const seen = new Set<string>();
+  const evidence: Evidence[] = [];
+  let idx = 0;
+  for (const r of allResults) {
+    const lessonId = (r.attributes?.lesson_id as string | undefined) ?? null;
+    if (!lessonId) continue;
+    const title = args.allowedLessonTitles.get(lessonId);
+    if (!title) continue; // isolation guard
+    const text = fsResultText(r);
+    if (!text) continue;
+    const key = `${lessonId}::${text}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    evidence.push({
+      source_id: `FS-${args.startIndex + idx + 1}`,
+      layer: "file_search",
+      lesson_id: lessonId,
+      lesson_title: title,
+      text,
+    });
+    idx += 1;
+  }
+  return { evidence, rawCount: allResults.length, lessonIdsSeen };
 }
 
 async function callFileSearchRetrieval(args: {
@@ -210,23 +275,26 @@ async function runFileSearch(args: {
   maxNumResults: number;
   bootcampId: string;
   startIndex: number;
-}): Promise<{ evidence: Evidence[]; raw: ResponsesEnvelope }> {
+}): Promise<{
+  evidence: Evidence[];
+  raw: ResponsesEnvelope;
+  debug: { raw_result_count: number; usable_count: number; lesson_ids_seen: string[] };
+}> {
   const raw = await callFileSearchRetrieval({
     model: args.model,
     question: args.question,
     vectorStoreId: args.vectorStoreId,
     maxNumResults: args.maxNumResults,
   });
-  const fsCall = envelopeFileSearchCall(raw);
-  const fsResults = fsCall?.results ?? [];
-
+  const allResults = envelopeAllFileSearchResults(raw);
   const lessonIds = Array.from(
     new Set(
-      fsResults
+      allResults
         .map((r) => (r.attributes?.lesson_id as string | undefined) ?? null)
         .filter((v): v is string => !!v),
     ),
   );
+
   let titles = new Map<string, string>();
   if (lessonIds.length > 0) {
     const { data: lessonRows } = await supabaseAdmin
@@ -240,27 +308,20 @@ async function runFileSearch(args: {
     );
   }
 
-  const evidence: Evidence[] = fsResults
-    .map((r, i): Evidence | null => {
-      const lessonId = (r.attributes?.lesson_id as string | undefined) ?? null;
-      if (!lessonId || !titles.has(lessonId)) return null; // isolation guard
-      const text = (r.content ?? [])
-        .map((c) => c.text ?? "")
-        .filter(Boolean)
-        .join("\n")
-        .trim();
-      if (!text) return null;
-      return {
-        source_id: `FS-${args.startIndex + i + 1}`,
-        layer: "file_search",
-        lesson_id: lessonId,
-        lesson_title: titles.get(lessonId)!,
-        text,
-      };
-    })
-    .filter((e): e is Evidence => !!e);
-
-  return { evidence, raw };
+  const { evidence, rawCount, lessonIdsSeen } = extractEvidenceFromFileSearch({
+    envelope: raw,
+    allowedLessonTitles: titles,
+    startIndex: args.startIndex,
+  });
+  return {
+    evidence,
+    raw,
+    debug: {
+      raw_result_count: rawCount,
+      usable_count: evidence.length,
+      lesson_ids_seen: lessonIdsSeen,
+    },
+  };
 }
 
 // ---------- Main entry ----------
