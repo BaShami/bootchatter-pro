@@ -77,20 +77,17 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Bootcamp Admin" },
+      { name: "description", content: "Admin platform for bootcamp lessons, students, announcements, and the AI learning brain." },
+      { property: "og:title", content: "Bootcamp Admin" },
+      { property: "og:description", content: "Admin platform for bootcamp lessons, students, announcements, and the AI learning brain." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
-      {
-        rel: "stylesheet",
-        href: appCss,
-      },
+      { rel: "stylesheet", href: appCss },
+      { rel: "preconnect", href: "https://rsms.me/" },
+      { rel: "stylesheet", href: "https://rsms.me/inter/inter.css" },
     ],
   }),
   shellComponent: RootShell,
@@ -115,10 +112,28 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    import("@/integrations/supabase/client").then(({ supabase }) => {
+      const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+        if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(() => {
+          router.invalidate();
+          if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+        }, 0);
+      });
+      (RootComponent as unknown as { _unsub?: () => void })._unsub = () => sub.subscription.unsubscribe();
+    });
+    return () => {
+      (RootComponent as unknown as { _unsub?: () => void })._unsub?.();
+    };
+  }, [router, queryClient]);
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
     </QueryClientProvider>
   );
