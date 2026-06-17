@@ -74,14 +74,17 @@ function AuthPage() {
     navigate({ to: "/dashboard", replace: true });
   }
 
+  const [resetting, setResetting] = useState(false);
   async function handleReset() {
     const email = (document.getElementById("signin-email") as HTMLInputElement | null)?.value;
     if (!email) return toast.error("Enter your email above first");
+    setResetting(true);
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${window.location.origin}/reset-password`,
     });
+    setResetting(false);
     if (error) return toast.error(error.message);
-    toast.success("Password reset email sent");
+    toast.success(`Password reset email sent to ${email}. Check your inbox (and spam folder).`);
   }
 
   return (
@@ -122,10 +125,12 @@ function AuthPage() {
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="text-xs text-muted-foreground hover:text-foreground block mx-auto"
+                    disabled={resetting}
+                    className="text-xs text-muted-foreground hover:text-foreground block mx-auto disabled:opacity-50"
                   >
-                    Forgot your password?
+                    {resetting ? "Sending reset email…" : "Forgot your password?"}
                   </button>
+
                 </form>
               </TabsContent>
 
