@@ -21,6 +21,9 @@ import {
 
 export type RetrievalMethod = "full_text" | "file_search" | "combined" | "fallback";
 
+// JSON-safe value used in serialized payloads (server fn return + DB inserts).
+type JsonVal = string | number | boolean | null | { [k: string]: JsonVal } | JsonVal[];
+
 export type AskResult = {
   question_id: string | null;
   answer: string;
@@ -28,17 +31,13 @@ export type AskResult = {
   retrieval_method: RetrievalMethod;
   source_lessons: { lesson_id: string; lesson_title: string }[];
   student: { first_name: string | null; last_name: string | null };
-  // Admin-only debug:
-  debug?: {
-    student_id: string;
-    bootcamp_id: string;
-    full_text_results: FullTextRow[];
-    file_search_used: boolean;
-    file_search_call: FileSearchCall | null;
-    brain_raw: unknown;
-    openai_response_id: string | null;
-  };
+  // Admin-only debug payload, JSON-safe.
+  debug?: JsonVal;
 };
+
+function toJson<T>(value: T): JsonVal {
+  return JSON.parse(JSON.stringify(value ?? null)) as JsonVal;
+}
 
 export type FullTextRow = {
   lesson_id: string;
