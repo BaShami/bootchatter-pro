@@ -17,8 +17,8 @@ import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedBootcampsRouteImport } from './routes/_authenticated/bootcamps'
 import { Route as AuthenticatedLessonsIndexRouteImport } from './routes/_authenticated/lessons.index'
+import { Route as ApiPublicInternalTestRouteImport } from './routes/api/public/internal-test'
 import { Route as ApiPublicAskQuestionRouteImport } from './routes/api/public/ask-question'
-import { Route as ApiPublicInternalTestRouteImport } from './routes/api/public/_internal-test'
 import { Route as AuthenticatedLessonsTestBrainRouteImport } from './routes/_authenticated/lessons.test-brain'
 import { Route as AuthenticatedLessonsIdRouteImport } from './routes/_authenticated/lessons.$id'
 import { Route as AuthenticatedBootcampsIdRouteImport } from './routes/_authenticated/bootcamps.$id'
@@ -64,14 +64,14 @@ const AuthenticatedLessonsIndexRoute =
     path: '/lessons/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const ApiPublicInternalTestRoute = ApiPublicInternalTestRouteImport.update({
+  id: '/api/public/internal-test',
+  path: '/api/public/internal-test',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicAskQuestionRoute = ApiPublicAskQuestionRouteImport.update({
   id: '/api/public/ask-question',
   path: '/api/public/ask-question',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicInternalTestRoute = ApiPublicInternalTestRouteImport.update({
-  id: '/api/public/_internal-test',
-  path: '/api/public',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedLessonsTestBrainRoute =
@@ -108,8 +108,8 @@ export interface FileRoutesByFullPath {
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
-  '/api/public': typeof ApiPublicInternalTestRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
+  '/api/public/internal-test': typeof ApiPublicInternalTestRoute
   '/lessons/': typeof AuthenticatedLessonsIndexRoute
   '/api/public/hooks/reconcile-indexing': typeof ApiPublicHooksReconcileIndexingRoute
 }
@@ -123,8 +123,8 @@ export interface FileRoutesByTo {
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
-  '/api/public': typeof ApiPublicInternalTestRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
+  '/api/public/internal-test': typeof ApiPublicInternalTestRoute
   '/lessons': typeof AuthenticatedLessonsIndexRoute
   '/api/public/hooks/reconcile-indexing': typeof ApiPublicHooksReconcileIndexingRoute
 }
@@ -140,8 +140,8 @@ export interface FileRoutesById {
   '/_authenticated/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/_authenticated/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/_authenticated/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
-  '/api/public/_internal-test': typeof ApiPublicInternalTestRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
+  '/api/public/internal-test': typeof ApiPublicInternalTestRoute
   '/_authenticated/lessons/': typeof AuthenticatedLessonsIndexRoute
   '/api/public/hooks/reconcile-indexing': typeof ApiPublicHooksReconcileIndexingRoute
 }
@@ -157,8 +157,8 @@ export interface FileRouteTypes {
     | '/bootcamps/$id'
     | '/lessons/$id'
     | '/lessons/test-brain'
-    | '/api/public'
     | '/api/public/ask-question'
+    | '/api/public/internal-test'
     | '/lessons/'
     | '/api/public/hooks/reconcile-indexing'
   fileRoutesByTo: FileRoutesByTo
@@ -172,8 +172,8 @@ export interface FileRouteTypes {
     | '/bootcamps/$id'
     | '/lessons/$id'
     | '/lessons/test-brain'
-    | '/api/public'
     | '/api/public/ask-question'
+    | '/api/public/internal-test'
     | '/lessons'
     | '/api/public/hooks/reconcile-indexing'
   id:
@@ -188,8 +188,8 @@ export interface FileRouteTypes {
     | '/_authenticated/bootcamps/$id'
     | '/_authenticated/lessons/$id'
     | '/_authenticated/lessons/test-brain'
-    | '/api/public/_internal-test'
     | '/api/public/ask-question'
+    | '/api/public/internal-test'
     | '/_authenticated/lessons/'
     | '/api/public/hooks/reconcile-indexing'
   fileRoutesById: FileRoutesById
@@ -199,8 +199,8 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  ApiPublicInternalTestRoute: typeof ApiPublicInternalTestRoute
   ApiPublicAskQuestionRoute: typeof ApiPublicAskQuestionRoute
+  ApiPublicInternalTestRoute: typeof ApiPublicInternalTestRoute
   ApiPublicHooksReconcileIndexingRoute: typeof ApiPublicHooksReconcileIndexingRoute
 }
 
@@ -262,18 +262,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedLessonsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/public/internal-test': {
+      id: '/api/public/internal-test'
+      path: '/api/public/internal-test'
+      fullPath: '/api/public/internal-test'
+      preLoaderRoute: typeof ApiPublicInternalTestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/ask-question': {
       id: '/api/public/ask-question'
       path: '/api/public/ask-question'
       fullPath: '/api/public/ask-question'
       preLoaderRoute: typeof ApiPublicAskQuestionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/_internal-test': {
-      id: '/api/public/_internal-test'
-      path: '/api/public'
-      fullPath: '/api/public'
-      preLoaderRoute: typeof ApiPublicInternalTestRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/lessons/test-brain': {
@@ -347,8 +347,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  ApiPublicInternalTestRoute: ApiPublicInternalTestRoute,
   ApiPublicAskQuestionRoute: ApiPublicAskQuestionRoute,
+  ApiPublicInternalTestRoute: ApiPublicInternalTestRoute,
   ApiPublicHooksReconcileIndexingRoute: ApiPublicHooksReconcileIndexingRoute,
 }
 export const routeTree = rootRouteImport

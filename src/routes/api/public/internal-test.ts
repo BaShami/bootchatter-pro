@@ -18,7 +18,7 @@ function json(status: number, body: unknown) {
   });
 }
 
-export const Route = createFileRoute("/api/public/_internal-test")({
+export const Route = createFileRoute("/api/public/internal-test")({
   server: {
     handlers: {
       POST: async () => {
