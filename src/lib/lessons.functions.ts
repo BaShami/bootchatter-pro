@@ -218,7 +218,7 @@ export const resyncLessonToOpenAI = createServerFn({ method: "POST" })
     if (!isAdmin) throw new Error("Forbidden");
 
     const { syncLessonToVectorStore } = await import("@/lib/lesson-sync.server");
-    return syncLessonToVectorStore(lesson.id, data.force);
+    return syncLessonToVectorStore(lesson.id, data.force, { waitForReady: false });
   });
 
 const RefreshInput = z.object({ lesson_id: z.string().uuid() });
