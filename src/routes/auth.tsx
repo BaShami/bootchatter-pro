@@ -125,10 +125,12 @@ function AuthPage() {
                   <button
                     type="button"
                     onClick={handleReset}
-                    className="text-xs text-muted-foreground hover:text-foreground block mx-auto"
+                    disabled={resetting}
+                    className="text-xs text-muted-foreground hover:text-foreground block mx-auto disabled:opacity-50"
                   >
-                    Forgot your password?
+                    {resetting ? "Sending reset email…" : "Forgot your password?"}
                   </button>
+
                 </form>
               </TabsContent>
 
