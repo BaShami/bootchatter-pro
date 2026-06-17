@@ -126,12 +126,15 @@ async function main() {
   for (const c of cases) runs.push(await runOne(c));
 
   // 5: isolation
+  const { data: anyUser } = await supabaseAdmin.auth.admin.listUsers();
+  const ownerUserId = anyUser.users[0]?.id;
   const isoName = `__test_isolation_${Date.now()}`;
-  const { data: bc } = await supabaseAdmin
+  const { data: bc, error: bcErr } = await supabaseAdmin
     .from("bootcamps")
-    .insert({ name: isoName, created_by: primaryStudent.id })
+    .insert({ name: isoName, created_by: ownerUserId })
     .select("id")
     .single();
+  if (bcErr) console.error("bc insert err", bcErr);
   let isoStudentId: string | null = null;
   if (bc?.id) {
     const { data: st } = await supabaseAdmin
