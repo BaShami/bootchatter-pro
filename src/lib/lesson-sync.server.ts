@@ -21,11 +21,10 @@ import {
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const VS_POLL_INTERVAL_MS = 1500;
-const VS_POLL_TIMEOUT_MS = 60_000;
 
-async function pollVSFileReady(vsId: string, vsFileId: string): Promise<void> {
+async function pollVSFileReady(vsId: string, vsFileId: string, timeoutMs: number): Promise<void> {
   const started = Date.now();
-  while (Date.now() - started < VS_POLL_TIMEOUT_MS) {
+  while (Date.now() - started < timeoutMs) {
     const f = await openaiGetVSFile(vsId, vsFileId);
     if (f.status === "completed") return;
     if (f.status === "failed" || f.status === "cancelled") {
@@ -33,8 +32,7 @@ async function pollVSFileReady(vsId: string, vsFileId: string): Promise<void> {
     }
     await new Promise((r) => setTimeout(r, VS_POLL_INTERVAL_MS));
   }
-  // Time out softly — caller can refresh status later.
-  throw new Error("Vector-store indexing did not complete within 60s");
+  throw new Error(`Vector-store indexing did not complete within ${Math.round(timeoutMs / 1000)}s`);
 }
 
 export async function ensureBootcampVectorStore(bootcampId: string): Promise<string> {
