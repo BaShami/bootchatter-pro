@@ -16,7 +16,13 @@ import { initials } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
-const navItems = [
+type NavItem = {
+  to: string;
+  label: string;
+  icon: typeof LayoutDashboard;
+  disabled?: boolean;
+};
+const navItems: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/bootcamps", label: "Bootcamps", icon: GraduationCap },
   { to: "/students", label: "Students", icon: Users },
@@ -25,7 +31,7 @@ const navItems = [
   { to: "/questions", label: "Questions", icon: MessageSquare, disabled: true },
   { to: "/analytics", label: "Analytics", icon: BarChart3, disabled: true },
   { to: "/settings", label: "Settings", icon: Settings, disabled: true },
-] as const;
+];
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
