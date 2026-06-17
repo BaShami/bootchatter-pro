@@ -177,6 +177,101 @@ function TestBrainPage() {
           </Card>
         </div>
       ) : null}
+
+      <SuiteRunner />
+    </div>
+  );
+}
+
+function SuiteRunner() {
+  const backfillFn = useServerFn(backfillPublishedLessons);
+  const suiteFn = useServerFn(runRetrievalTestSuite);
+
+  const backfill = useMutation({ mutationFn: () => backfillFn() });
+  const suite = useMutation({ mutationFn: () => suiteFn() });
+
+  return (
+    <div className="mt-10 space-y-4">
+      <div>
+        <h2 className="text-lg font-semibold">Automated checks (platform admin)</h2>
+        <p className="text-sm text-muted-foreground">
+          Re-syncs every published lesson and runs the 6 canonical retrieval cases against the live brain.
+        </p>
+      </div>
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          onClick={() => backfill.mutate()}
+          disabled={backfill.isPending}
+        >
+          {backfill.isPending ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Database className="h-4 w-4 mr-1.5" />}
+          Sync published lessons
+        </Button>
+        <Button onClick={() => suite.mutate()} disabled={suite.isPending}>
+          {suite.isPending ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1.5" />}
+          Run 6-case suite
+        </Button>
+      </div>
+
+      {backfill.error ? (
+        <p className="text-sm text-destructive">Backfill: {(backfill.error as Error).message}</p>
+      ) : null}
+      {backfill.data ? (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Backfill results</CardTitle></CardHeader>
+          <CardContent>
+            <ul className="text-sm space-y-1">
+              {backfill.data.results.map((r) => (
+                <li key={r.lesson_id} className="flex flex-wrap items-center gap-2">
+                  <Badge variant="outline" className={r.openai_status === "completed" || r.sync_status === "ready" ? "bg-emerald-100 text-emerald-800" : r.sync_status === "error" ? "bg-destructive/10 text-destructive" : "bg-amber-100 text-amber-800"}>
+                    {r.openai_status ?? r.sync_status}
+                  </Badge>
+                  <span>{r.title}</span>
+                  <span className="text-xs text-muted-foreground">({r.waited_ms} ms)</span>
+                  {r.error ? <span className="text-xs text-destructive break-words">{r.error}</span> : null}
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {suite.error ? (
+        <p className="text-sm text-destructive">Suite: {(suite.error as Error).message}</p>
+      ) : null}
+      {suite.data && "runs" in suite.data ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Suite results — {suite.data.passed}/{suite.data.total} passed
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {suite.data.runs.map((r, i) => (
+              <div key={i} className="border border-border rounded-md p-3 space-y-1.5">
+                <div className="flex items-center gap-2">
+                  {r.pass ? (
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  ) : (
+                    <XCircle className="h-4 w-4 text-destructive" />
+                  )}
+                  <span className="font-medium text-sm">{r.name}</span>
+                  <Badge variant="outline" className={METHOD_COLOR[r.method]}>{r.method}</Badge>
+                  <span className="text-xs text-muted-foreground ml-auto">conf {r.confidence.toFixed(2)}</span>
+                </div>
+                {r.question ? <p className="text-xs text-muted-foreground italic">“{r.question}”</p> : null}
+                <p className={`text-xs ${r.pass ? "text-muted-foreground" : "text-destructive"}`}>{r.reason}</p>
+                {r.sources.length > 0 ? (
+                  <p className="text-xs">Sources: {r.sources.map((s) => s.lesson_title).join(", ")}</p>
+                ) : null}
+                {r.answer_preview ? (
+                  <p className="text-xs text-muted-foreground line-clamp-3">{r.answer_preview}</p>
+                ) : null}
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
     </div>
   );
 }
