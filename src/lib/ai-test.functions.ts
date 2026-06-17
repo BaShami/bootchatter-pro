@@ -442,7 +442,7 @@ export const runFileSearchParserTest = createServerFn({ method: "POST" })
           ],
         },
       ],
-    } as const;
+    };
 
     const allowed = new Map<string, string>([
       [LESSON_A, "Lesson A"],
@@ -450,21 +450,25 @@ export const runFileSearchParserTest = createServerFn({ method: "POST" })
     ]);
 
     const { evidence, rawCount, lessonIdsSeen } = extractEvidenceFromFileSearch({
-      envelope: envelope as Parameters<typeof extractEvidenceFromFileSearch>[0]["envelope"],
+      envelope: envelope as unknown as Parameters<typeof extractEvidenceFromFileSearch>[0]["envelope"],
       allowedLessonTitles: allowed,
       startIndex: 0,
     });
 
-    const checks: Array<{ name: string; pass: boolean; got: unknown; want: unknown }> = [
-      { name: "walks both file_search_call items (rawCount)", pass: rawCount === 6, got: rawCount, want: 6 },
-      { name: "sees foreign lesson in lessonIdsSeen", pass: lessonIdsSeen.includes(LESSON_FOREIGN), got: lessonIdsSeen, want: "includes foreign" },
-      { name: "emits exactly 2 evidence items", pass: evidence.length === 2, got: evidence.length, want: 2 },
-      { name: "uses top-level text from result 1", pass: evidence[0]?.text === "AI agents and workflows summary", got: evidence[0]?.text, want: "AI agents and workflows summary" },
-      { name: "falls back to content[].text for legacy shape", pass: evidence[1]?.text === "Lesson B content via content[]", got: evidence[1]?.text, want: "Lesson B content via content[]" },
-      { name: "drops foreign-bootcamp lesson", pass: !evidence.some((e) => e.lesson_id === LESSON_FOREIGN), got: evidence.map((e) => e.lesson_id), want: "no foreign id" },
-      { name: "dedupes identical (lesson_id, text)", pass: evidence.filter((e) => e.lesson_id === LESSON_A).length === 1, got: evidence.filter((e) => e.lesson_id === LESSON_A).length, want: 1 },
+    const s = (v: unknown): string => {
+      try { return typeof v === "string" ? v : JSON.stringify(v); } catch { return String(v); }
+    };
+
+    const checks: Array<{ name: string; pass: boolean; got: string; want: string }> = [
+      { name: "walks both file_search_call items (rawCount)", pass: rawCount === 6, got: s(rawCount), want: "6" },
+      { name: "sees foreign lesson in lessonIdsSeen", pass: lessonIdsSeen.includes(LESSON_FOREIGN), got: s(lessonIdsSeen), want: "includes foreign" },
+      { name: "emits exactly 2 evidence items", pass: evidence.length === 2, got: s(evidence.length), want: "2" },
+      { name: "uses top-level text from result 1", pass: evidence[0]?.text === "AI agents and workflows summary", got: s(evidence[0]?.text), want: "AI agents and workflows summary" },
+      { name: "falls back to content[].text for legacy shape", pass: evidence[1]?.text === "Lesson B content via content[]", got: s(evidence[1]?.text), want: "Lesson B content via content[]" },
+      { name: "drops foreign-bootcamp lesson", pass: !evidence.some((e) => e.lesson_id === LESSON_FOREIGN), got: s(evidence.map((e) => e.lesson_id)), want: "no foreign id" },
+      { name: "dedupes identical (lesson_id, text)", pass: evidence.filter((e) => e.lesson_id === LESSON_A).length === 1, got: s(evidence.filter((e) => e.lesson_id === LESSON_A).length), want: "1" },
       { name: "skips empty text", pass: evidence.every((e) => e.text.length > 0), got: "ok", want: "ok" },
-      { name: "source_ids are FS-1, FS-2", pass: evidence.map((e) => e.source_id).join(",") === "FS-1,FS-2", got: evidence.map((e) => e.source_id), want: ["FS-1", "FS-2"] },
+      { name: "source_ids are FS-1, FS-2", pass: evidence.map((e) => e.source_id).join(",") === "FS-1,FS-2", got: s(evidence.map((e) => e.source_id)), want: "FS-1,FS-2" },
     ];
 
     const passed = checks.filter((c) => c.pass).length;
@@ -473,6 +477,11 @@ export const runFileSearchParserTest = createServerFn({ method: "POST" })
       passed,
       failed: checks.length - passed,
       checks,
-      evidence,
+      evidence_preview: evidence.map((e) => ({
+        source_id: e.source_id,
+        lesson_id: e.lesson_id,
+        lesson_title: e.lesson_title,
+        text: e.text.slice(0, 120),
+      })),
     };
   });
