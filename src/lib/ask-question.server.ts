@@ -308,10 +308,10 @@ export async function askQuestion(opts: {
         ai_answer: finalAnswer,
         confidence_score: confidence,
         retrieval_method: method,
-        full_text_results: fullTextResults,
+        full_text_results: toJson(fullTextResults),
         file_search_used: !!fsCall,
-        file_search_results: fsCall?.results ?? null,
-        source_lessons: sourceLessons,
+        file_search_results: toJson(fsCall?.results ?? null),
+        source_lessons: toJson(sourceLessons),
         referenced_lessons: sourceLessons.map((s) => s.lesson_id),
         openai_response_id: openaiResponseId,
         external_message_id: opts.externalMessageId ?? null,
@@ -337,12 +337,18 @@ export async function askQuestion(opts: {
   };
 
   if (opts.includeDebug) {
-    result.debug = {
+    result.debug = toJson({
       student_id: student.id,
       bootcamp_id: opts.bootcampId,
       full_text_results: fullTextResults,
       file_search_used: !!fsCall,
       file_search_call: fsCall,
+      brain_raw: brainRaw,
+      openai_response_id: openaiResponseId,
+    });
+  }
+  return result;
+}
       brain_raw: brainRaw,
       openai_response_id: openaiResponseId,
     };
