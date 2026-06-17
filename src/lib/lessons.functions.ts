@@ -178,10 +178,11 @@ export const setLessonPublished = createServerFn({ method: "POST" })
         .eq("id", lesson.id);
       if (upErr) throw new Error(upErr.message);
 
-      // Kick off sync. Awaited so errors surface to the caller, but the
-      // sync helper updates status itself so partial progress is durable.
+      // Upload+attach but do NOT poll-to-ready here. Indexing finishes in the
+      // background; the UI polls refreshLessonSyncStatus for completion. This
+      // keeps the publish click responsive (typically a few seconds).
       const { syncLessonToVectorStore } = await import("@/lib/lesson-sync.server");
-      const syncResult = await syncLessonToVectorStore(lesson.id);
+      const syncResult = await syncLessonToVectorStore(lesson.id, false, { waitForReady: false });
       return { ok: true, sync: syncResult };
     }
 
