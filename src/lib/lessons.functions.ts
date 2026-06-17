@@ -231,7 +231,7 @@ export const refreshLessonSyncStatus = createServerFn({ method: "POST" })
     const { supabase, userId } = context;
     const { data: lesson } = await supabase
       .from("lessons")
-      .select("id, bootcamp_id, openai_file_id, openai_indexing_status")
+      .select("id, bootcamp_id, openai_indexing_status")
       .eq("id", data.lesson_id)
       .maybeSingle();
     if (!lesson) throw new Error("Lesson not found");
@@ -240,30 +240,9 @@ export const refreshLessonSyncStatus = createServerFn({ method: "POST" })
       _bootcamp_id: lesson.bootcamp_id,
     });
     if (!isAdmin) throw new Error("Forbidden");
-    if (!lesson.openai_file_id) return { status: lesson.openai_indexing_status };
 
-    const { data: settings } = await supabase
-      .from("bootcamp_settings")
-      .select("openai_vector_store_id")
-      .eq("bootcamp_id", lesson.bootcamp_id)
-      .maybeSingle();
-    if (!settings?.openai_vector_store_id) return { status: lesson.openai_indexing_status };
-
-    const { openaiGetVSFile } = await import("@/lib/openai.server");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    try {
-      const f = await openaiGetVSFile(settings.openai_vector_store_id, lesson.openai_file_id);
-      const mapped = f.status === "completed" ? "ready" : f.status === "failed" || f.status === "cancelled" ? "error" : "indexing";
-      await supabaseAdmin
-        .from("lessons")
-        .update({
-          openai_indexing_status: mapped,
-          openai_indexed_at: mapped === "ready" ? new Date().toISOString() : null,
-          openai_sync_error: mapped === "error" ? f.last_error?.message ?? "failed" : null,
-        })
-        .eq("id", lesson.id);
-      return { status: mapped, openai: f.status };
-    } catch (e) {
-      return { status: "error", error: (e as Error).message };
-    }
+    const { reconcileLessonIndexingStatus } = await import("@/lib/lesson-sync.server");
+    const outcome = await reconcileLessonIndexingStatus(lesson.id);
+    return { outcome };
   });
+
