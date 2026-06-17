@@ -521,10 +521,7 @@ export async function askQuestion(opts: {
         retrieval_method: method,
         full_text_results: toJson(ftRows),
         file_search_used: !!fsCallRaw,
-        file_search_results: toJson(
-          envelopeFileSearchCall(fsCallRaw ?? ({ output: [] } as ResponsesEnvelope))?.results ??
-            null,
-        ),
+        file_search_results: toJson(fsCallRaw ? envelopeFileSearchCall(fsCallRaw)?.results ?? null : null),
         source_lessons: toJson(sourceLessons),
         referenced_lessons: sourceLessons.map((s) => s.lesson_id),
         openai_response_id: synth.raw.id,
@@ -533,6 +530,7 @@ export async function askQuestion(opts: {
       })
       .select("id")
       .single();
+
     questionId = logged?.id ?? null;
     await supabaseAdmin
       .from("students")
