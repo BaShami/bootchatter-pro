@@ -632,7 +632,7 @@ async function persistAnswer(args: {
         full_text_results: toJson(args.ftRows),
         file_search_used: !!args.fsCallRaw,
         file_search_results: toJson(
-          args.fsCallRaw ? envelopeFileSearchCall(args.fsCallRaw)?.results ?? null : null,
+          args.fsCallRaw ? envelopeAllFileSearchResults(args.fsCallRaw) : null,
         ),
         source_lessons: toJson(args.sourceLessons),
         referenced_lessons: args.sourceLessons.map((s) => s.lesson_id),
