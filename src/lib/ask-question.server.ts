@@ -349,12 +349,6 @@ export async function askQuestion(opts: {
   }
   return result;
 }
-      brain_raw: brainRaw,
-      openai_response_id: openaiResponseId,
-    };
-  }
-  return result;
-}
 
 function parseBrain(text: string): BrainOutput {
   try {
