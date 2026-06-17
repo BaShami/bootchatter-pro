@@ -8,6 +8,7 @@ const BodySchema = z.object({
     .regex(/^\+[1-9]\d{6,14}$/, "phone_number must be E.164 format, e.g. +14155551234"),
   question: z.string().trim().min(2).max(2000),
   external_message_id: z.string().trim().max(200).optional(),
+  debug: z.boolean().optional(),
 });
 
 function json(status: number, body: unknown) {
