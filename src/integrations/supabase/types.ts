@@ -396,6 +396,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
+          indexing_started_at: string | null
           key_topics: string[] | null
           last_synced_at: string | null
           learning_objectives: string | null
@@ -420,6 +421,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          indexing_started_at?: string | null
           key_topics?: string[] | null
           last_synced_at?: string | null
           learning_objectives?: string | null
@@ -444,6 +446,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          indexing_started_at?: string | null
           key_topics?: string[] | null
           last_synced_at?: string | null
           learning_objectives?: string | null
@@ -670,6 +673,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_cron_secret: { Args: never; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

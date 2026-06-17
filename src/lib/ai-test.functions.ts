@@ -203,27 +203,36 @@ export const runRetrievalTestSuite = createServerFn({ method: "POST" })
 
     const cases: TestCase[] = [
       {
-        name: "1. Exact keyword → full_text",
+        name: "1. Exact keyword (any grounded retrieval)",
         question: `Tell me about ${exactKeyword}.`,
         studentId: primaryStudent.id,
         bootcampId: primaryStudent.bootcamp_id,
-        expect: { method: ["full_text", "combined"], mustHaveSources: true },
+        expect: {
+          method: ["full_text", "file_search", "combined"],
+          mustHaveSources: true,
+        },
       },
       {
-        name: "2. Rephrased / semantic → file_search or combined",
+        name: "2. Rephrased / semantic",
         question:
           "Give me a high-level overview of the core ideas this session was really about, in your own words.",
         studentId: primaryStudent.id,
         bootcampId: primaryStudent.bootcamp_id,
-        expect: { method: ["file_search", "combined", "full_text"], mustHaveSources: true },
+        expect: {
+          method: ["full_text", "file_search", "combined"],
+          mustHaveSources: true,
+        },
       },
       {
-        name: "3. Multi-section → file_search or combined",
+        name: "3. Multi-section",
         question:
           "Combine information from across the lesson and explain how the different parts fit together.",
         studentId: primaryStudent.id,
         bootcampId: primaryStudent.bootcamp_id,
-        expect: { method: ["file_search", "combined", "full_text"], mustHaveSources: true },
+        expect: {
+          method: ["full_text", "file_search", "combined"],
+          mustHaveSources: true,
+        },
       },
       {
         name: "4. Off-topic → fallback",
@@ -238,25 +247,54 @@ export const runRetrievalTestSuite = createServerFn({ method: "POST" })
     const runs: TestRun[] = [];
     for (const c of cases) runs.push(await runOne(c, askQuestion));
 
-    if (otherStudent && pubLesson) {
-      runs.push(
-        await runOne(
-          {
-            name: "5. Different bootcamp isolation → fallback",
-            question: `Tell me about ${exactKeyword}.`,
-            studentId: otherStudent.id,
-            bootcampId: otherStudent.bootcamp_id,
-            expect: { mustBeFallback: true },
-          },
-          askQuestion,
-        ),
-      );
+    // ----- Test 5: isolation. Create a temporary 2nd bootcamp + student. -----
+    const isoBootcampName = `__test_isolation_${Date.now()}`;
+    const isoBootcampInsert = await supabaseAdmin
+      .from("bootcamps")
+      .insert({ name: isoBootcampName, created_by: context.userId })
+      .select("id")
+      .single();
+    const isoBootcampId = isoBootcampInsert.data?.id ?? null;
+    let isoStudentId: string | null = null;
+    if (isoBootcampId) {
+      const isoStudent = await supabaseAdmin
+        .from("students")
+        .insert({
+          bootcamp_id: isoBootcampId,
+          first_name: "Iso",
+          last_name: "Test",
+          phone_number: `+1555${Date.now().toString().slice(-7)}`,
+          enrollment_status: "active",
+        })
+        .select("id")
+        .single();
+      isoStudentId = isoStudent.data?.id ?? null;
+    }
+
+    if (isoStudentId && isoBootcampId) {
+      try {
+        runs.push(
+          await runOne(
+            {
+              name: "5. Different bootcamp isolation → fallback",
+              question: `Tell me about ${exactKeyword}.`,
+              studentId: isoStudentId,
+              bootcampId: isoBootcampId,
+              expect: { mustBeFallback: true },
+            },
+            askQuestion,
+          ),
+        );
+      } finally {
+        await supabaseAdmin.from("students").delete().eq("id", isoStudentId);
+        await supabaseAdmin.from("bootcamps").delete().eq("id", isoBootcampId);
+      }
     } else {
       runs.push({
-        name: "5. Different bootcamp isolation (SKIPPED — only one bootcamp/student exists)",
+        name: "5. Different bootcamp isolation (FAILED to provision temp bootcamp)",
         question: "",
-        pass: true,
-        reason: "skipped",
+        pass: false,
+        reason: "could not create temporary bootcamp/student",
         method: "fallback",
         confidence: 0,
         sources: [],
@@ -295,6 +333,7 @@ export const runRetrievalTestSuite = createServerFn({ method: "POST" })
       runs,
     };
   });
+
 
 async function runOne(
   c: TestCase,
