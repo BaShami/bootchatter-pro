@@ -21,11 +21,10 @@ import {
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const VS_POLL_INTERVAL_MS = 1500;
-const VS_POLL_TIMEOUT_MS = 60_000;
 
-async function pollVSFileReady(vsId: string, vsFileId: string): Promise<void> {
+async function pollVSFileReady(vsId: string, vsFileId: string, timeoutMs: number): Promise<void> {
   const started = Date.now();
-  while (Date.now() - started < VS_POLL_TIMEOUT_MS) {
+  while (Date.now() - started < timeoutMs) {
     const f = await openaiGetVSFile(vsId, vsFileId);
     if (f.status === "completed") return;
     if (f.status === "failed" || f.status === "cancelled") {
@@ -33,8 +32,7 @@ async function pollVSFileReady(vsId: string, vsFileId: string): Promise<void> {
     }
     await new Promise((r) => setTimeout(r, VS_POLL_INTERVAL_MS));
   }
-  // Time out softly — caller can refresh status later.
-  throw new Error("Vector-store indexing did not complete within 60s");
+  throw new Error(`Vector-store indexing did not complete within ${Math.round(timeoutMs / 1000)}s`);
 }
 
 export async function ensureBootcampVectorStore(bootcampId: string): Promise<string> {
@@ -103,7 +101,13 @@ export type SyncResult = {
 
 /** Idempotent full sync. If content_hash unchanged and a file already exists,
  *  re-asserts attributes (e.g. published=true) and returns unchanged=true. */
-export async function syncLessonToVectorStore(lessonId: string, force = false): Promise<SyncResult> {
+export async function syncLessonToVectorStore(
+  lessonId: string,
+  force = false,
+  opts: { waitForReady?: boolean; pollTimeoutMs?: number } = {},
+): Promise<SyncResult> {
+  const waitForReady = opts.waitForReady ?? true;
+  const pollTimeoutMs = opts.pollTimeoutMs ?? 60_000;
   const { data: lesson, error } = await supabaseAdmin
     .from("lessons")
     .select(
@@ -169,11 +173,13 @@ export async function syncLessonToVectorStore(lessonId: string, force = false): 
     const previousFileId = lesson.openai_file_id;
     let finalStatus: "ready" | "indexing" = "indexing";
 
-    try {
-      await pollVSFileReady(vsId, uploaded.id);
-      finalStatus = "ready";
-    } catch (e) {
-      console.warn("indexing not complete in time", (e as Error).message);
+    if (waitForReady) {
+      try {
+        await pollVSFileReady(vsId, uploaded.id, pollTimeoutMs);
+        finalStatus = "ready";
+      } catch (e) {
+        console.warn("indexing not complete in time", (e as Error).message);
+      }
     }
 
     // Update DB to point at new file BEFORE removing the old one.

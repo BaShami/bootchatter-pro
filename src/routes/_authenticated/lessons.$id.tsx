@@ -39,6 +39,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatDate } from "@/lib/format";
+import { LessonSyncCard } from "@/components/lesson-sync-card";
+
 
 export const Route = createFileRoute("/_authenticated/lessons/$id")({
   head: () => ({ meta: [{ title: "Lesson · Bootcamp Admin" }] }),
@@ -423,6 +425,8 @@ function LessonDetail() {
               ) : null}
             </CardContent>
           </Card>
+
+          <LessonSyncCard lessonId={id} />
 
           <Card>
             <CardHeader>

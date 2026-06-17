@@ -9,6 +9,7 @@ import {
   BarChart3,
   Settings,
   LogOut,
+  Sparkles,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, usePermissions } from "@/hooks/use-auth";
@@ -27,6 +28,7 @@ const navItems: NavItem[] = [
   { to: "/bootcamps", label: "Bootcamps", icon: GraduationCap },
   { to: "/students", label: "Students", icon: Users },
   { to: "/lessons", label: "Lessons", icon: BookOpen },
+  { to: "/lessons/test-brain", label: "Test AI brain", icon: Sparkles },
   { to: "/announcements", label: "Announcements", icon: Megaphone, disabled: true },
   { to: "/questions", label: "Questions", icon: MessageSquare, disabled: true },
   { to: "/analytics", label: "Analytics", icon: BarChart3, disabled: true },
