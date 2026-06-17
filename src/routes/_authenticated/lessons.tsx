@@ -235,6 +235,7 @@ function CreateLessonDialog({
   onDone: () => void;
 }) {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const mutation = useMutation({
     mutationFn: async (input: z.infer<typeof createSchema>) => {
       const { data: user } = await supabase.auth.getUser();
@@ -254,10 +255,11 @@ function CreateLessonDialog({
       if (error) throw error;
       return data;
     },
-    onSuccess: () => {
-      toast.success("Lesson created");
+    onSuccess: (data) => {
+      toast.success("Lesson created — paste or upload the transcript next");
       qc.invalidateQueries({ queryKey: ["lessons", bootcampId] });
       onDone();
+      if (data?.id) navigate({ to: "/lessons/$id", params: { id: data.id } });
     },
     onError: (e: Error) => toast.error(e.message),
   });
