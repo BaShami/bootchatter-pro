@@ -187,19 +187,25 @@ function TestBrainPage() {
 function SuiteRunner() {
   const backfillFn = useServerFn(backfillPublishedLessons);
   const suiteFn = useServerFn(runRetrievalTestSuite);
+  const parserFn = useServerFn(runFileSearchParserTest);
 
   const backfill = useMutation({ mutationFn: () => backfillFn() });
   const suite = useMutation({ mutationFn: () => suiteFn() });
+  const parser = useMutation({ mutationFn: () => parserFn() });
 
   return (
     <div className="mt-10 space-y-4">
       <div>
         <h2 className="text-lg font-semibold">Automated checks (platform admin)</h2>
         <p className="text-sm text-muted-foreground">
-          Re-syncs every published lesson and runs the 6 canonical retrieval cases against the live brain.
+          Parser unit test, lesson re-sync, and the 6 canonical retrieval cases against the live brain.
         </p>
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
+        <Button variant="outline" onClick={() => parser.mutate()} disabled={parser.isPending}>
+          {parser.isPending ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Sparkles className="h-4 w-4 mr-1.5" />}
+          Run FS parser unit test
+        </Button>
         <Button
           variant="outline"
           onClick={() => backfill.mutate()}
@@ -213,6 +219,37 @@ function SuiteRunner() {
           Run 6-case suite
         </Button>
       </div>
+
+      {parser.error ? (
+        <p className="text-sm text-destructive">Parser: {(parser.error as Error).message}</p>
+      ) : null}
+      {parser.data ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">
+              Parser unit test — {parser.data.passed}/{parser.data.total} passed
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {parser.data.checks.map((c, i) => (
+              <div key={i} className="flex items-start gap-2 text-sm">
+                {c.pass ? (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-600 mt-0.5" />
+                ) : (
+                  <XCircle className="h-4 w-4 text-destructive mt-0.5" />
+                )}
+                <div>
+                  <div className="font-medium">{c.name}</div>
+                  {!c.pass ? (
+                    <div className="text-xs text-destructive">got: {c.got} · want: {c.want}</div>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
+
 
       {backfill.error ? (
         <p className="text-sm text-destructive">Backfill: {(backfill.error as Error).message}</p>
