@@ -14,9 +14,9 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated/students'
-import { Route as AuthenticatedLessonsRouteImport } from './routes/_authenticated/lessons'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedBootcampsRouteImport } from './routes/_authenticated/bootcamps'
+import { Route as AuthenticatedLessonsIndexRouteImport } from './routes/_authenticated/lessons.index'
 import { Route as ApiPublicAskQuestionRouteImport } from './routes/api/public/ask-question'
 import { Route as AuthenticatedLessonsIdRouteImport } from './routes/_authenticated/lessons.$id'
 import { Route as AuthenticatedBootcampsIdRouteImport } from './routes/_authenticated/bootcamps.$id'
@@ -45,11 +45,6 @@ const AuthenticatedStudentsRoute = AuthenticatedStudentsRouteImport.update({
   path: '/students',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedLessonsRoute = AuthenticatedLessonsRouteImport.update({
-  id: '/lessons',
-  path: '/lessons',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -60,15 +55,21 @@ const AuthenticatedBootcampsRoute = AuthenticatedBootcampsRouteImport.update({
   path: '/bootcamps',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedLessonsIndexRoute =
+  AuthenticatedLessonsIndexRouteImport.update({
+    id: '/lessons/',
+    path: '/lessons/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicAskQuestionRoute = ApiPublicAskQuestionRouteImport.update({
   id: '/api/public/ask-question',
   path: '/api/public/ask-question',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedLessonsIdRoute = AuthenticatedLessonsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
-  getParentRoute: () => AuthenticatedLessonsRoute,
+  id: '/lessons/$id',
+  path: '/lessons/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedBootcampsIdRoute =
   AuthenticatedBootcampsIdRouteImport.update({
@@ -83,11 +84,11 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/bootcamps': typeof AuthenticatedBootcampsRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/lessons': typeof AuthenticatedLessonsRouteWithChildren
   '/students': typeof AuthenticatedStudentsRoute
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
+  '/lessons/': typeof AuthenticatedLessonsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -95,11 +96,11 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/bootcamps': typeof AuthenticatedBootcampsRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
-  '/lessons': typeof AuthenticatedLessonsRouteWithChildren
   '/students': typeof AuthenticatedStudentsRoute
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
+  '/lessons': typeof AuthenticatedLessonsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -109,11 +110,11 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/_authenticated/bootcamps': typeof AuthenticatedBootcampsRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
-  '/_authenticated/lessons': typeof AuthenticatedLessonsRouteWithChildren
   '/_authenticated/students': typeof AuthenticatedStudentsRoute
   '/_authenticated/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/_authenticated/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
+  '/_authenticated/lessons/': typeof AuthenticatedLessonsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -123,11 +124,11 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/bootcamps'
     | '/dashboard'
-    | '/lessons'
     | '/students'
     | '/bootcamps/$id'
     | '/lessons/$id'
     | '/api/public/ask-question'
+    | '/lessons/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -135,11 +136,11 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/bootcamps'
     | '/dashboard'
-    | '/lessons'
     | '/students'
     | '/bootcamps/$id'
     | '/lessons/$id'
     | '/api/public/ask-question'
+    | '/lessons'
   id:
     | '__root__'
     | '/'
@@ -148,11 +149,11 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/_authenticated/bootcamps'
     | '/_authenticated/dashboard'
-    | '/_authenticated/lessons'
     | '/_authenticated/students'
     | '/_authenticated/bootcamps/$id'
     | '/_authenticated/lessons/$id'
     | '/api/public/ask-question'
+    | '/_authenticated/lessons/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -200,13 +201,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedStudentsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/lessons': {
-      id: '/_authenticated/lessons'
-      path: '/lessons'
-      fullPath: '/lessons'
-      preLoaderRoute: typeof AuthenticatedLessonsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -221,6 +215,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBootcampsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/lessons/': {
+      id: '/_authenticated/lessons/'
+      path: '/lessons'
+      fullPath: '/lessons/'
+      preLoaderRoute: typeof AuthenticatedLessonsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/ask-question': {
       id: '/api/public/ask-question'
       path: '/api/public/ask-question'
@@ -230,10 +231,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/lessons/$id': {
       id: '/_authenticated/lessons/$id'
-      path: '/$id'
+      path: '/lessons/$id'
       fullPath: '/lessons/$id'
       preLoaderRoute: typeof AuthenticatedLessonsIdRouteImport
-      parentRoute: typeof AuthenticatedLessonsRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/bootcamps/$id': {
       id: '/_authenticated/bootcamps/$id'
@@ -259,29 +260,20 @@ const AuthenticatedBootcampsRouteWithChildren =
     AuthenticatedBootcampsRouteChildren,
   )
 
-interface AuthenticatedLessonsRouteChildren {
-  AuthenticatedLessonsIdRoute: typeof AuthenticatedLessonsIdRoute
-}
-
-const AuthenticatedLessonsRouteChildren: AuthenticatedLessonsRouteChildren = {
-  AuthenticatedLessonsIdRoute: AuthenticatedLessonsIdRoute,
-}
-
-const AuthenticatedLessonsRouteWithChildren =
-  AuthenticatedLessonsRoute._addFileChildren(AuthenticatedLessonsRouteChildren)
-
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedBootcampsRoute: typeof AuthenticatedBootcampsRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
-  AuthenticatedLessonsRoute: typeof AuthenticatedLessonsRouteWithChildren
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRoute
+  AuthenticatedLessonsIdRoute: typeof AuthenticatedLessonsIdRoute
+  AuthenticatedLessonsIndexRoute: typeof AuthenticatedLessonsIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBootcampsRoute: AuthenticatedBootcampsRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
-  AuthenticatedLessonsRoute: AuthenticatedLessonsRouteWithChildren,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRoute,
+  AuthenticatedLessonsIdRoute: AuthenticatedLessonsIdRoute,
+  AuthenticatedLessonsIndexRoute: AuthenticatedLessonsIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
