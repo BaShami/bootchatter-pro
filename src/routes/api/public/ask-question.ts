@@ -188,7 +188,7 @@ Rules:
           .eq("id", student.id);
 
         // 9. Return
-        return json(200, {
+        const response: Record<string, unknown> = {
           question_id: logged?.id ?? null,
           answer,
           confidence,
@@ -198,7 +198,35 @@ Rules:
             similarity: Number(h.similarity),
           })),
           student: { first_name: student.first_name, last_name: student.last_name },
-        });
+        };
+
+        if (body.debug) {
+          response.debug = {
+            supabase_url: process.env.SUPABASE_URL ?? null,
+            student_id: student.id,
+            student_bootcamp_id: student.bootcamp_id,
+            settings_bootcamp_id: settings ? student.bootcamp_id : null,
+            settings_loaded: !!settings,
+            minimum_similarity_loaded: minSim,
+            retrieval_limit_loaded: retrievalLimit,
+            query_embedding_dimensions: questionVec.length,
+            rpc_params: {
+              p_bootcamp_id: student.bootcamp_id,
+              match_count: retrievalLimit,
+              min_similarity: minSim,
+              query_embedding_preview: `[${questionVec.slice(0, 3).join(",")},...,${questionVec.slice(-3).join(",")}]`,
+            },
+            rpc_error: matchErr ?? null,
+            rpc_rows_returned: hits.length,
+            highest_similarity: hits.length
+              ? Math.max(...hits.map((h) => Number(h.similarity) || 0))
+              : null,
+            first_lesson_id: hits[0]?.lesson_id ?? null,
+            post_filter_discarded: false,
+          };
+        }
+
+        return json(200, response);
       },
 
       OPTIONS: async () =>
