@@ -77,12 +77,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Bootcamp Admin" },
+      { title: "Bootcamp AI" },
       { name: "description", content: "Admin platform for bootcamp lessons, students, announcements, and the AI learning brain." },
-      { property: "og:title", content: "Bootcamp Admin" },
+      { property: "og:title", content: "Bootcamp AI" },
       { property: "og:description", content: "Admin platform for bootcamp lessons, students, announcements, and the AI learning brain." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Bootcamp AI" },
+      { name: "twitter:description", content: "Admin platform for bootcamp lessons, students, announcements, and the AI learning brain." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/63f05180-c52e-4c28-82c4-df18e1adfbc2/id-preview-90f02442--3054734d-685a-4713-808b-0bbe9e4bddaa.lovable.app-1781721220268.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/63f05180-c52e-4c28-82c4-df18e1adfbc2/id-preview-90f02442--3054734d-685a-4713-808b-0bbe9e4bddaa.lovable.app-1781721220268.png" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
