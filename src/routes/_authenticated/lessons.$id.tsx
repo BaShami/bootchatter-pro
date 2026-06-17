@@ -475,7 +475,7 @@ function UploadButton({
   async function handle(file: File) {
     setBusy(true);
     try {
-      const { parseDocument } = await import("@/lib/parse-document.client");
+      const { parseDocument } = await import("@/lib/parse-document");
       const parsed = await parseDocument(file);
       if (!parsed.text || parsed.text.length < 5) {
         throw new Error("No readable text found in this file");
