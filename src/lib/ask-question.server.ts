@@ -570,7 +570,7 @@ async function finalizeFallback(args: {
   externalMessageId: string | null;
   log: boolean;
   includeDebug: boolean;
-  debugExtra: JsonVal;
+  debugExtra: unknown;
 }): Promise<AskResult> {
   let questionId: string | null = null;
   if (args.log) {
@@ -603,6 +603,6 @@ async function finalizeFallback(args: {
     source_lessons: [],
     student: { first_name: args.student.first_name, last_name: args.student.last_name },
   };
-  if (args.includeDebug) r.debug = args.debugExtra;
+  if (args.includeDebug) r.debug = toJson(args.debugExtra);
   return r;
 }
