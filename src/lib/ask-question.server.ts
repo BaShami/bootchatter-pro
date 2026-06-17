@@ -444,6 +444,7 @@ export async function askQuestion(opts: {
   // ----- Stage 3: file search (only if vector store configured) -----
   let fsEvidence: Evidence[] = [];
   let fsCallRaw: ResponsesEnvelope | null = null;
+  let fsDebug: { raw_result_count: number; usable_count: number; lesson_ids_seen: string[] } | null = null;
   if (vectorStoreId) {
     try {
       const fs = await runFileSearch({
@@ -456,6 +457,7 @@ export async function askQuestion(opts: {
       });
       fsEvidence = fs.evidence;
       fsCallRaw = fs.raw;
+      fsDebug = fs.debug;
     } catch (e) {
       // Don't crash the whole call if FS fails — fall back gracefully.
       console.error("file_search failed", e);
@@ -475,6 +477,7 @@ export async function askQuestion(opts: {
       debugExtra: {
         stage: "no_evidence",
         ft_debug: ftDebug,
+        fs_debug: fsDebug,
         ft_rows: ftRows,
         fs_call: fsCallRaw,
         synth_ft: synthFt?.out ?? null,
@@ -507,6 +510,7 @@ export async function askQuestion(opts: {
       debugExtra: {
         stage: "synth_rejected",
         ft_debug: ftDebug,
+        fs_debug: fsDebug,
         ft_rows: ftRows,
         fs_call: fsCallRaw,
         synth_ft: synthFt?.out ?? null,
