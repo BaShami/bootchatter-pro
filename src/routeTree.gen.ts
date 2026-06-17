@@ -18,6 +18,7 @@ import { Route as AuthenticatedDashboardRouteImport } from './routes/_authentica
 import { Route as AuthenticatedBootcampsRouteImport } from './routes/_authenticated/bootcamps'
 import { Route as AuthenticatedLessonsIndexRouteImport } from './routes/_authenticated/lessons.index'
 import { Route as ApiPublicAskQuestionRouteImport } from './routes/api/public/ask-question'
+import { Route as ApiPublic_internalTestsRouteImport } from './routes/api/public/__internal-tests'
 import { Route as AuthenticatedLessonsIdRouteImport } from './routes/_authenticated/lessons.$id'
 import { Route as AuthenticatedBootcampsIdRouteImport } from './routes/_authenticated/bootcamps.$id'
 
@@ -66,6 +67,11 @@ const ApiPublicAskQuestionRoute = ApiPublicAskQuestionRouteImport.update({
   path: '/api/public/ask-question',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublic_internalTestsRoute = ApiPublic_internalTestsRouteImport.update({
+  id: '/api/public/__internal-tests',
+  path: '/api/public',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedLessonsIdRoute = AuthenticatedLessonsIdRouteImport.update({
   id: '/lessons/$id',
   path: '/lessons/$id',
@@ -87,6 +93,7 @@ export interface FileRoutesByFullPath {
   '/students': typeof AuthenticatedStudentsRoute
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
+  '/api/public': typeof ApiPublic_internalTestsRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
   '/lessons/': typeof AuthenticatedLessonsIndexRoute
 }
@@ -99,6 +106,7 @@ export interface FileRoutesByTo {
   '/students': typeof AuthenticatedStudentsRoute
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
+  '/api/public': typeof ApiPublic_internalTestsRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
   '/lessons': typeof AuthenticatedLessonsIndexRoute
 }
@@ -113,6 +121,7 @@ export interface FileRoutesById {
   '/_authenticated/students': typeof AuthenticatedStudentsRoute
   '/_authenticated/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/_authenticated/lessons/$id': typeof AuthenticatedLessonsIdRoute
+  '/api/public/__internal-tests': typeof ApiPublic_internalTestsRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
   '/_authenticated/lessons/': typeof AuthenticatedLessonsIndexRoute
 }
@@ -127,6 +136,7 @@ export interface FileRouteTypes {
     | '/students'
     | '/bootcamps/$id'
     | '/lessons/$id'
+    | '/api/public'
     | '/api/public/ask-question'
     | '/lessons/'
   fileRoutesByTo: FileRoutesByTo
@@ -139,6 +149,7 @@ export interface FileRouteTypes {
     | '/students'
     | '/bootcamps/$id'
     | '/lessons/$id'
+    | '/api/public'
     | '/api/public/ask-question'
     | '/lessons'
   id:
@@ -152,6 +163,7 @@ export interface FileRouteTypes {
     | '/_authenticated/students'
     | '/_authenticated/bootcamps/$id'
     | '/_authenticated/lessons/$id'
+    | '/api/public/__internal-tests'
     | '/api/public/ask-question'
     | '/_authenticated/lessons/'
   fileRoutesById: FileRoutesById
@@ -161,6 +173,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  ApiPublic_internalTestsRoute: typeof ApiPublic_internalTestsRoute
   ApiPublicAskQuestionRoute: typeof ApiPublicAskQuestionRoute
 }
 
@@ -229,6 +242,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicAskQuestionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/__internal-tests': {
+      id: '/api/public/__internal-tests'
+      path: '/api/public'
+      fullPath: '/api/public'
+      preLoaderRoute: typeof ApiPublic_internalTestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/lessons/$id': {
       id: '/_authenticated/lessons/$id'
       path: '/lessons/$id'
@@ -284,6 +304,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  ApiPublic_internalTestsRoute: ApiPublic_internalTestsRoute,
   ApiPublicAskQuestionRoute: ApiPublicAskQuestionRoute,
 }
 export const routeTree = rootRouteImport
