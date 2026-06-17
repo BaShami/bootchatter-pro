@@ -226,7 +226,7 @@ export const runRetrievalTestSuite = createServerFn({ method: "POST" })
       {
         name: "3. Multi-section",
         question:
-          "Combine information from across the lesson and explain how the different parts fit together.",
+          "What did the participants say about workflows and AI agents during this session?",
         studentId: primaryStudent.id,
         bootcampId: primaryStudent.bootcamp_id,
         expect: {
