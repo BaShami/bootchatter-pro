@@ -21,6 +21,7 @@ import { Route as ApiPublicAskQuestionRouteImport } from './routes/api/public/as
 import { Route as AuthenticatedLessonsTestBrainRouteImport } from './routes/_authenticated/lessons.test-brain'
 import { Route as AuthenticatedLessonsIdRouteImport } from './routes/_authenticated/lessons.$id'
 import { Route as AuthenticatedBootcampsIdRouteImport } from './routes/_authenticated/bootcamps.$id'
+import { Route as ApiPublicHooksReconcileIndexingRouteImport } from './routes/api/public/hooks/reconcile-indexing'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -84,6 +85,12 @@ const AuthenticatedBootcampsIdRoute =
     path: '/$id',
     getParentRoute: () => AuthenticatedBootcampsRoute,
   } as any)
+const ApiPublicHooksReconcileIndexingRoute =
+  ApiPublicHooksReconcileIndexingRouteImport.update({
+    id: '/api/public/hooks/reconcile-indexing',
+    path: '/api/public/hooks/reconcile-indexing',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
   '/lessons/': typeof AuthenticatedLessonsIndexRoute
+  '/api/public/hooks/reconcile-indexing': typeof ApiPublicHooksReconcileIndexingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -110,6 +118,7 @@ export interface FileRoutesByTo {
   '/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
   '/lessons': typeof AuthenticatedLessonsIndexRoute
+  '/api/public/hooks/reconcile-indexing': typeof ApiPublicHooksReconcileIndexingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -125,6 +134,7 @@ export interface FileRoutesById {
   '/_authenticated/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
   '/_authenticated/lessons/': typeof AuthenticatedLessonsIndexRoute
+  '/api/public/hooks/reconcile-indexing': typeof ApiPublicHooksReconcileIndexingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -140,6 +150,7 @@ export interface FileRouteTypes {
     | '/lessons/test-brain'
     | '/api/public/ask-question'
     | '/lessons/'
+    | '/api/public/hooks/reconcile-indexing'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -153,6 +164,7 @@ export interface FileRouteTypes {
     | '/lessons/test-brain'
     | '/api/public/ask-question'
     | '/lessons'
+    | '/api/public/hooks/reconcile-indexing'
   id:
     | '__root__'
     | '/'
@@ -167,6 +179,7 @@ export interface FileRouteTypes {
     | '/_authenticated/lessons/test-brain'
     | '/api/public/ask-question'
     | '/_authenticated/lessons/'
+    | '/api/public/hooks/reconcile-indexing'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -175,6 +188,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ApiPublicAskQuestionRoute: typeof ApiPublicAskQuestionRoute
+  ApiPublicHooksReconcileIndexingRoute: typeof ApiPublicHooksReconcileIndexingRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -263,6 +277,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBootcampsIdRouteImport
       parentRoute: typeof AuthenticatedBootcampsRoute
     }
+    '/api/public/hooks/reconcile-indexing': {
+      id: '/api/public/hooks/reconcile-indexing'
+      path: '/api/public/hooks/reconcile-indexing'
+      fullPath: '/api/public/hooks/reconcile-indexing'
+      preLoaderRoute: typeof ApiPublicHooksReconcileIndexingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -307,6 +328,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ApiPublicAskQuestionRoute: ApiPublicAskQuestionRoute,
+  ApiPublicHooksReconcileIndexingRoute: ApiPublicHooksReconcileIndexingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
