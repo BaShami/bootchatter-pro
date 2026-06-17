@@ -8,8 +8,9 @@ const ProcessInput = z.object({
 });
 
 /**
- * Re-chunks the lesson transcript, embeds with OpenAI, replaces lesson_chunks,
- * and optionally generates summary/objectives/topics with GPT.
+ * Re-chunks the lesson transcript and replaces lesson_chunks for full-text
+ * search. No more pgvector embeddings; OpenAI File Search is the semantic
+ * layer (handled separately by syncLessonToOpenAI).
  */
 export const processLesson = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -17,16 +18,14 @@ export const processLesson = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
 
-    // Load lesson (RLS scopes to bootcamps the user can read)
     const { data: lesson, error: lessonErr } = await supabase
       .from("lessons")
-      .select("id, bootcamp_id, title, transcript, status")
+      .select("id, bootcamp_id, title, transcript, status, key_topics, module_name")
       .eq("id", data.lesson_id)
       .maybeSingle();
     if (lessonErr) throw new Error(lessonErr.message);
     if (!lesson) throw new Error("Lesson not found or access denied");
 
-    // Must be admin of this bootcamp
     const { data: isAdmin } = await supabase.rpc("is_bootcamp_admin", {
       _user_id: userId,
       _bootcamp_id: lesson.bootcamp_id,
@@ -36,38 +35,27 @@ export const processLesson = createServerFn({ method: "POST" })
     const transcript = (lesson.transcript ?? "").trim();
     if (!transcript) throw new Error("Lesson has no transcript to process");
 
-    const { chunkText, openaiEmbed, openaiChat } = await import("@/lib/openai.server");
-    const chunks = chunkText(transcript);
+    const { chunkText, cleanTranscript, openaiChat } = await import("@/lib/openai.server");
+    const cleaned = cleanTranscript(transcript);
+    const chunks = chunkText(cleaned);
     if (chunks.length === 0) throw new Error("No chunks produced from transcript");
 
-    // Mark processing
-    await supabase
-      .from("lessons")
-      .update({ status: "processing" })
-      .eq("id", lesson.id);
+    await supabase.from("lessons").update({ status: "processing" }).eq("id", lesson.id);
 
-    // Embed in batches of 64
-    const embeddings: number[][] = [];
-    const BATCH = 64;
-    for (let i = 0; i < chunks.length; i += BATCH) {
-      const batch = chunks.slice(i, i + BATCH);
-      const vecs = await openaiEmbed(batch);
-      embeddings.push(...vecs);
-    }
-
-    // Replace chunks (use service role via admin client for clean delete+insert)
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("lesson_chunks").delete().eq("lesson_id", lesson.id);
 
+    const topicsStr = (lesson.key_topics ?? []).join(" ");
     const rows = chunks.map((text, idx) => ({
       lesson_id: lesson.id,
       bootcamp_id: lesson.bootcamp_id,
       chunk_index: idx,
       chunk_text: text,
-      embedding: `[${embeddings[idx].join(",")}]`,
+      search_content: [lesson.title, lesson.module_name ?? "", topicsStr, text]
+        .filter(Boolean)
+        .join(" | "),
     }));
 
-    // Insert in batches of 100
     for (let i = 0; i < rows.length; i += 100) {
       const { error } = await supabaseAdmin
         .from("lesson_chunks")
@@ -83,7 +71,7 @@ export const processLesson = createServerFn({ method: "POST" })
 
     if (data.generate_metadata) {
       try {
-        const sample = transcript.slice(0, 12000);
+        const sample = cleaned.slice(0, 12000);
         const raw = await openaiChat({
           system:
             "You analyze bootcamp lesson transcripts. Respond with strict JSON only.",
@@ -97,7 +85,7 @@ Produce JSON with this exact shape:
 {
   "summary": "2-4 sentence summary",
   "learning_objectives": "3-5 bullet lines separated by \\n, each starting with '- '",
-  "key_topics": ["topic 1", "topic 2", "..."]  // 3-8 short topic strings
+  "key_topics": ["topic 1", "topic 2", "..."]
 }`,
           response_format: { type: "json_object" },
           max_tokens: 700,
@@ -106,9 +94,7 @@ Produce JSON with this exact shape:
         metadata = {
           summary: typeof parsed.summary === "string" ? parsed.summary : undefined,
           learning_objectives:
-            typeof parsed.learning_objectives === "string"
-              ? parsed.learning_objectives
-              : undefined,
+            typeof parsed.learning_objectives === "string" ? parsed.learning_objectives : undefined,
           key_topics: Array.isArray(parsed.key_topics)
             ? parsed.key_topics.filter((t) => typeof t === "string").slice(0, 12)
             : undefined,
@@ -142,6 +128,14 @@ const PublishInput = z.object({
   publish: z.boolean(),
 });
 
+/**
+ * Publish/unpublish a lesson.
+ * - publish=true: mark published, then run a synchronous-ish sync to the
+ *   bootcamp's OpenAI vector store. The sync helper marks the indexing
+ *   status itself (uploading -> indexing/ready/error) so the UI can poll.
+ * - publish=false: detach the file from the vector store first (so File
+ *   Search stops returning it), then mark the lesson unpublished.
+ */
 export const setLessonPublished = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => PublishInput.parse(d))
@@ -163,26 +157,112 @@ export const setLessonPublished = createServerFn({ method: "POST" })
     if (!isAdmin) throw new Error("Forbidden");
 
     if (data.publish) {
-      // Must have chunks first
       const { count } = await supabase
         .from("lesson_chunks")
         .select("id", { count: "exact", head: true })
         .eq("lesson_id", lesson.id);
       if (!count || count === 0) {
         throw new Error(
-          "Lesson has no embedded chunks. Process the transcript before publishing.",
+          "Lesson has no full-text chunks. Process the transcript before publishing.",
         );
       }
+
+      const { error: upErr } = await supabase
+        .from("lessons")
+        .update({
+          status: "published",
+          published_at: new Date().toISOString(),
+          openai_indexing_status: "uploading",
+          openai_sync_error: null,
+        })
+        .eq("id", lesson.id);
+      if (upErr) throw new Error(upErr.message);
+
+      // Kick off sync. Awaited so errors surface to the caller, but the
+      // sync helper updates status itself so partial progress is durable.
+      const { syncLessonToVectorStore } = await import("@/lib/lesson-sync.server");
+      const syncResult = await syncLessonToVectorStore(lesson.id);
+      return { ok: true, sync: syncResult };
     }
 
+    // Unpublish
+    const { unsyncLessonFromVectorStore } = await import("@/lib/lesson-sync.server");
+    await unsyncLessonFromVectorStore(lesson.id);
     const { error: upErr } = await supabase
       .from("lessons")
-      .update({
-        status: data.publish ? "published" : "ready",
-        published_at: data.publish ? new Date().toISOString() : null,
-      })
+      .update({ status: "ready", published_at: null })
       .eq("id", lesson.id);
     if (upErr) throw new Error(upErr.message);
-
     return { ok: true };
+  });
+
+const ResyncInput = z.object({ lesson_id: z.string().uuid(), force: z.boolean().default(true) });
+
+/** Force re-upload + re-attach to OpenAI vector store. Admin only. */
+export const resyncLessonToOpenAI = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => ResyncInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: lesson } = await supabase
+      .from("lessons")
+      .select("id, bootcamp_id")
+      .eq("id", data.lesson_id)
+      .maybeSingle();
+    if (!lesson) throw new Error("Lesson not found");
+    const { data: isAdmin } = await supabase.rpc("is_bootcamp_admin", {
+      _user_id: userId,
+      _bootcamp_id: lesson.bootcamp_id,
+    });
+    if (!isAdmin) throw new Error("Forbidden");
+
+    const { syncLessonToVectorStore } = await import("@/lib/lesson-sync.server");
+    return syncLessonToVectorStore(lesson.id, data.force);
+  });
+
+const RefreshInput = z.object({ lesson_id: z.string().uuid() });
+
+/** Polls OpenAI for current vector-store-file status and updates DB. */
+export const refreshLessonSyncStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => RefreshInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: lesson } = await supabase
+      .from("lessons")
+      .select("id, bootcamp_id, openai_file_id, openai_indexing_status")
+      .eq("id", data.lesson_id)
+      .maybeSingle();
+    if (!lesson) throw new Error("Lesson not found");
+    const { data: isAdmin } = await supabase.rpc("is_bootcamp_admin", {
+      _user_id: userId,
+      _bootcamp_id: lesson.bootcamp_id,
+    });
+    if (!isAdmin) throw new Error("Forbidden");
+    if (!lesson.openai_file_id) return { status: lesson.openai_indexing_status };
+
+    const { data: settings } = await supabase
+      .from("bootcamp_settings")
+      .select("openai_vector_store_id")
+      .eq("bootcamp_id", lesson.bootcamp_id)
+      .maybeSingle();
+    if (!settings?.openai_vector_store_id) return { status: lesson.openai_indexing_status };
+
+    const { openaiGetVSFile } = await import("@/lib/openai.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    try {
+      const f = await openaiGetVSFile(settings.openai_vector_store_id, lesson.openai_file_id);
+      const mapped = f.status === "completed" ? "ready" : f.status === "failed" || f.status === "cancelled" ? "error" : "indexing";
+      await supabaseAdmin
+        .from("lessons")
+        .update({
+          openai_indexing_status: mapped,
+          openai_indexed_at: mapped === "ready" ? new Date().toISOString() : null,
+          openai_sync_error: mapped === "error" ? f.last_error?.message ?? "failed" : null,
+        })
+        .eq("id", lesson.id);
+      return { status: mapped, openai: f.status };
+    } catch (e) {
+      return { status: "error", error: (e as Error).message };
+    }
   });

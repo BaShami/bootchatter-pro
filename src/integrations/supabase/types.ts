@@ -187,12 +187,16 @@ export type Database = {
           bootcamp_id: string
           created_at: string
           fallback_answer: string | null
+          file_search_result_limit: number
+          full_text_result_limit: number
           id: string
           make_webhook_url: string | null
           max_answer_length: number | null
           minimum_similarity: number | null
+          openai_vector_store_id: string | null
           retrieval_limit: number | null
           updated_at: string
+          vector_store_status: string
         }
         Insert: {
           ai_instructions?: string | null
@@ -201,12 +205,16 @@ export type Database = {
           bootcamp_id: string
           created_at?: string
           fallback_answer?: string | null
+          file_search_result_limit?: number
+          full_text_result_limit?: number
           id?: string
           make_webhook_url?: string | null
           max_answer_length?: number | null
           minimum_similarity?: number | null
+          openai_vector_store_id?: string | null
           retrieval_limit?: number | null
           updated_at?: string
+          vector_store_status?: string
         }
         Update: {
           ai_instructions?: string | null
@@ -215,12 +223,16 @@ export type Database = {
           bootcamp_id?: string
           created_at?: string
           fallback_answer?: string | null
+          file_search_result_limit?: number
+          full_text_result_limit?: number
           id?: string
           make_webhook_url?: string | null
           max_answer_length?: number | null
           minimum_similarity?: number | null
+          openai_vector_store_id?: string | null
           retrieval_limit?: number | null
           updated_at?: string
+          vector_store_status?: string
         }
         Relationships: [
           {
@@ -278,9 +290,12 @@ export type Database = {
           chunk_text: string
           created_at: string
           embedding: string | null
+          full_text_metadata: Json | null
           id: string
           lesson_id: string
           metadata: Json | null
+          search_content: string | null
+          search_vector: unknown
         }
         Insert: {
           bootcamp_id: string
@@ -288,9 +303,12 @@ export type Database = {
           chunk_text: string
           created_at?: string
           embedding?: string | null
+          full_text_metadata?: Json | null
           id?: string
           lesson_id: string
           metadata?: Json | null
+          search_content?: string | null
+          search_vector?: unknown
         }
         Update: {
           bootcamp_id?: string
@@ -298,9 +316,12 @@ export type Database = {
           chunk_text?: string
           created_at?: string
           embedding?: string | null
+          full_text_metadata?: Json | null
           id?: string
           lesson_id?: string
           metadata?: Json | null
+          search_content?: string | null
+          search_vector?: unknown
         }
         Relationships: [
           {
@@ -370,15 +391,21 @@ export type Database = {
       lessons: {
         Row: {
           bootcamp_id: string
+          content_hash: string | null
           created_at: string
           created_by: string | null
           description: string | null
           id: string
           key_topics: string[] | null
+          last_synced_at: string | null
           learning_objectives: string | null
           lesson_date: string | null
           lesson_number: number | null
           module_name: string | null
+          openai_file_id: string | null
+          openai_indexed_at: string | null
+          openai_indexing_status: string
+          openai_sync_error: string | null
           published_at: string | null
           status: Database["public"]["Enums"]["lesson_status"]
           summary: string | null
@@ -388,15 +415,21 @@ export type Database = {
         }
         Insert: {
           bootcamp_id: string
+          content_hash?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
           key_topics?: string[] | null
+          last_synced_at?: string | null
           learning_objectives?: string | null
           lesson_date?: string | null
           lesson_number?: number | null
           module_name?: string | null
+          openai_file_id?: string | null
+          openai_indexed_at?: string | null
+          openai_indexing_status?: string
+          openai_sync_error?: string | null
           published_at?: string | null
           status?: Database["public"]["Enums"]["lesson_status"]
           summary?: string | null
@@ -406,15 +439,21 @@ export type Database = {
         }
         Update: {
           bootcamp_id?: string
+          content_hash?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
           key_topics?: string[] | null
+          last_synced_at?: string | null
           learning_objectives?: string | null
           lesson_date?: string | null
           lesson_number?: number | null
           module_name?: string | null
+          openai_file_id?: string | null
+          openai_indexed_at?: string | null
+          openai_indexing_status?: string
+          openai_sync_error?: string | null
           published_at?: string | null
           status?: Database["public"]["Enums"]["lesson_status"]
           summary?: string | null
@@ -466,13 +505,20 @@ export type Database = {
           confidence_score: number | null
           created_at: string
           external_message_id: string | null
+          file_search_results: Json | null
+          file_search_used: boolean
+          full_text_results: Json | null
           id: string
           instructor_answer: string | null
           metadata: Json | null
+          openai_response_id: string | null
           question_text: string
           referenced_lessons: string[] | null
+          retrieval_debug: Json | null
+          retrieval_method: string | null
           retrieved_chunks: Json | null
           review_status: Database["public"]["Enums"]["review_status"]
+          source_lessons: Json | null
           student_id: string | null
           updated_at: string
         }
@@ -482,13 +528,20 @@ export type Database = {
           confidence_score?: number | null
           created_at?: string
           external_message_id?: string | null
+          file_search_results?: Json | null
+          file_search_used?: boolean
+          full_text_results?: Json | null
           id?: string
           instructor_answer?: string | null
           metadata?: Json | null
+          openai_response_id?: string | null
           question_text: string
           referenced_lessons?: string[] | null
+          retrieval_debug?: Json | null
+          retrieval_method?: string | null
           retrieved_chunks?: Json | null
           review_status?: Database["public"]["Enums"]["review_status"]
+          source_lessons?: Json | null
           student_id?: string | null
           updated_at?: string
         }
@@ -498,13 +551,20 @@ export type Database = {
           confidence_score?: number | null
           created_at?: string
           external_message_id?: string | null
+          file_search_results?: Json | null
+          file_search_used?: boolean
+          full_text_results?: Json | null
           id?: string
           instructor_answer?: string | null
           metadata?: Json | null
+          openai_response_id?: string | null
           question_text?: string
           referenced_lessons?: string[] | null
+          retrieval_debug?: Json | null
+          retrieval_method?: string | null
           retrieved_chunks?: Json | null
           review_status?: Database["public"]["Enums"]["review_status"]
+          source_lessons?: Json | null
           student_id?: string | null
           updated_at?: string
         }
@@ -639,6 +699,16 @@ export type Database = {
           lesson_id: string
           lesson_title: string
           similarity: number
+        }[]
+      }
+      search_published_lesson_chunks: {
+        Args: { p_bootcamp_id: string; p_limit?: number; p_query: string }
+        Returns: {
+          chunk_id: string
+          chunk_text: string
+          lesson_id: string
+          lesson_title: string
+          rank: number
         }[]
       }
     }
