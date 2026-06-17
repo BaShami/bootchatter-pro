@@ -26,7 +26,7 @@ const navItems: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/bootcamps", label: "Bootcamps", icon: GraduationCap },
   { to: "/students", label: "Students", icon: Users },
-  { to: "/lessons", label: "Lessons", icon: BookOpen, disabled: true },
+  { to: "/lessons", label: "Lessons", icon: BookOpen },
   { to: "/announcements", label: "Announcements", icon: Megaphone, disabled: true },
   { to: "/questions", label: "Questions", icon: MessageSquare, disabled: true },
   { to: "/analytics", label: "Analytics", icon: BarChart3, disabled: true },
