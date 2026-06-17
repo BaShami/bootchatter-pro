@@ -51,7 +51,7 @@ export const testAskQuestion = createServerFn({ method: "POST" })
   });
 
 async function requirePlatformAdmin(
-  supabase: { rpc: (n: string, p: Record<string, unknown>) => Promise<{ data: unknown }> },
+  supabase: import("@/integrations/supabase/auth-middleware").AuthedSupabase,
   userId: string,
 ) {
   const { data } = await supabase.rpc("has_role", {
