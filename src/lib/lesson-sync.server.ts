@@ -173,11 +173,13 @@ export async function syncLessonToVectorStore(
     const previousFileId = lesson.openai_file_id;
     let finalStatus: "ready" | "indexing" = "indexing";
 
-    try {
-      await pollVSFileReady(vsId, uploaded.id);
-      finalStatus = "ready";
-    } catch (e) {
-      console.warn("indexing not complete in time", (e as Error).message);
+    if (waitForReady) {
+      try {
+        await pollVSFileReady(vsId, uploaded.id, pollTimeoutMs);
+        finalStatus = "ready";
+      } catch (e) {
+        console.warn("indexing not complete in time", (e as Error).message);
+      }
     }
 
     // Update DB to point at new file BEFORE removing the old one.
