@@ -387,6 +387,11 @@ function NewAnnouncementPage() {
                 <span className="text-muted-foreground">Recipients: </span>
                 <span className="font-medium tabular-nums">{recipientCount}</span>
               </div>
+              {!webhookQ.isLoading && !webhookConfigured && (
+                <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
+                  Configure your Make webhook URL in Bootcamp Settings before sending announcements.
+                </div>
+              )}
               <Button
                 className="w-full"
                 onClick={() => {
@@ -395,7 +400,7 @@ function NewAnnouncementPage() {
                   if (tooLong) return toast.error("Message is over the character limit");
                   setConfirmOpen(true);
                 }}
-                disabled={sendMutation.isPending}
+                disabled={sendMutation.isPending || !webhookConfigured}
               >
                 <Send className="h-4 w-4 mr-1.5" />
                 {sendMutation.isPending ? "Sending…" : "Send now"}
