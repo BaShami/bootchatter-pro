@@ -233,7 +233,12 @@ function QuestionsPage() {
           ) : !questions || questions.length === 0 ? (
             <div className="p-10 text-center text-sm text-muted-foreground">
               <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              No questions match these filters.
+              {bootcampId === "all" &&
+              dateRange === "all" &&
+              methodFilter === "all" &&
+              confidenceFilter === "all"
+                ? "No questions yet. Students will appear here once they start asking."
+                : "No questions match these filters."}
             </div>
           ) : (
             <Table>
