@@ -3,10 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus, Search, BookOpen } from "lucide-react";
+import { Plus, Search, BookOpen, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useBootcamps } from "@/hooks/use-bootcamps";
 import { useLessons } from "@/hooks/use-lessons";
+import { usePermissions } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,20 @@ const STATUS_STYLES: Record<string, string> = {
   published: "bg-emerald-100 text-emerald-800",
   failed: "bg-destructive/10 text-destructive",
   archived: "bg-muted text-muted-foreground line-through",
+};
+
+const TEACHER_STATUS_LABEL: Record<string, string> = {
+  draft: "Draft",
+  processing: "Processing",
+  ready: "Processing",
+  failed: "Draft",
+  published: "Live",
+  archived: "Draft",
+};
+const TEACHER_STATUS_STYLES: Record<string, string> = {
+  Draft: "bg-muted text-muted-foreground",
+  Processing: "bg-primary/10 text-primary",
+  Live: "bg-emerald-100 text-emerald-800",
 };
 
 function LessonsPage() {
