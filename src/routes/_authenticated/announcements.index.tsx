@@ -105,7 +105,7 @@ function AnnouncementsListPage() {
           ) : announcements.data?.announcements.length === 0 ? (
             <div className="p-10 text-center text-sm text-muted-foreground">
               <Megaphone className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              No announcements yet.
+              No announcements sent yet. Send your first message to all students.
             </div>
           ) : (
             <Table>
