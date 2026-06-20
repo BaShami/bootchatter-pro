@@ -48,6 +48,12 @@ export function AppSidebar() {
   const user = useCurrentUser();
   const navigate = useNavigate();
   const { data: perms } = usePermissions();
+  const navItems = perms?.isTeacher ? teacherNavItems : adminNavItems;
+  const roleLabel = perms?.isPlatformAdmin
+    ? "Platform admin"
+    : perms?.isTeacher
+      ? "Teacher"
+      : "Bootcamp admin";
 
   async function signOut() {
     await supabase.auth.signOut();
