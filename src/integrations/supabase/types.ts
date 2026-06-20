@@ -283,6 +283,48 @@ export type Database = {
         }
         Relationships: []
       }
+      invites: {
+        Row: {
+          accepted_at: string | null
+          accepted_user_id: string | null
+          bootcamp_ids: string[]
+          created_at: string
+          created_by: string | null
+          email: string
+          expires_at: string
+          id: string
+          role: Database["public"]["Enums"]["bootcamp_role"]
+          status: string
+          token: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          bootcamp_ids: string[]
+          created_at?: string
+          created_by?: string | null
+          email: string
+          expires_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["bootcamp_role"]
+          status?: string
+          token?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_user_id?: string | null
+          bootcamp_ids?: string[]
+          created_at?: string
+          created_by?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["bootcamp_role"]
+          status?: string
+          token?: string
+        }
+        Relationships: []
+      }
       lesson_chunks: {
         Row: {
           bootcamp_id: string
@@ -474,6 +516,36 @@ export type Database = {
           },
         ]
       }
+      password_reset_requests: {
+        Row: {
+          actioned_at: string | null
+          actioned_by: string | null
+          email: string
+          id: string
+          requested_at: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          actioned_at?: string | null
+          actioned_by?: string | null
+          email: string
+          id?: string
+          requested_at?: string
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          actioned_at?: string | null
+          actioned_by?: string | null
+          email?: string
+          id?: string
+          requested_at?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string
@@ -481,6 +553,8 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          password_reset_expires_at: string | null
+          password_reset_token: string | null
           updated_at: string
         }
         Insert: {
@@ -489,6 +563,8 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
+          password_reset_expires_at?: string | null
+          password_reset_token?: string | null
           updated_at?: string
         }
         Update: {
@@ -497,6 +573,8 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          password_reset_expires_at?: string | null
+          password_reset_token?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -674,6 +752,18 @@ export type Database = {
     }
     Functions: {
       get_cron_secret: { Args: never; Returns: string }
+      get_invite_by_token: {
+        Args: { _token: string }
+        Returns: {
+          bootcamp_ids: string[]
+          bootcamp_names: string[]
+          email: string
+          expired: boolean
+          expires_at: string
+          id: string
+          status: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -686,6 +776,10 @@ export type Database = {
         Returns: boolean
       }
       is_bootcamp_member: {
+        Args: { _bootcamp_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_bootcamp_teacher: {
         Args: { _bootcamp_id: string; _user_id: string }
         Returns: boolean
       }
