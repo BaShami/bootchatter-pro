@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dialog";
 import { formatDate } from "@/lib/format";
 import { BootcampKnowledgeBaseCard } from "@/components/bootcamp-kb-card";
+import { TeachersCard } from "@/components/teachers-card";
 
 export const Route = createFileRoute("/_authenticated/bootcamps/$id")({
   head: () => ({ meta: [{ title: "Bootcamp · Bootcamp Admin" }] }),
