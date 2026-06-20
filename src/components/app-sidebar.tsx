@@ -24,7 +24,7 @@ type NavItem = {
   icon: typeof LayoutDashboard;
   disabled?: boolean;
 };
-const navItems: NavItem[] = [
+const adminNavItems: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/bootcamps", label: "Bootcamps", icon: GraduationCap },
   { to: "/students", label: "Students", icon: Users },
@@ -34,6 +34,13 @@ const navItems: NavItem[] = [
   { to: "/questions", label: "Questions", icon: MessageSquare, disabled: true },
   { to: "/analytics", label: "Analytics", icon: BarChart3, disabled: true },
   { to: "/settings", label: "Settings", icon: Settings, disabled: true },
+];
+
+const teacherNavItems: NavItem[] = [
+  { to: "/dashboard", label: "My Bootcamps", icon: GraduationCap },
+  { to: "/lessons", label: "Lessons", icon: BookOpen },
+  { to: "/announcements", label: "Announcements", icon: Megaphone, disabled: true },
+  { to: "/questions", label: "Questions", icon: MessageSquare, disabled: true },
 ];
 
 export function AppSidebar() {
