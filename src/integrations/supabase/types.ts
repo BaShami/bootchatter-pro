@@ -727,7 +727,7 @@ export type Database = {
         | "completed"
         | "cancelled"
       app_role: "platform_admin"
-      bootcamp_role: "admin"
+      bootcamp_role: "admin" | "teacher"
       bootcamp_status: "draft" | "active" | "completed" | "archived"
       consent_status: "pending" | "granted" | "revoked"
       enrollment_status:
@@ -888,7 +888,7 @@ export const Constants = {
         "cancelled",
       ],
       app_role: ["platform_admin"],
-      bootcamp_role: ["admin"],
+      bootcamp_role: ["admin", "teacher"],
       bootcamp_status: ["draft", "active", "completed", "archived"],
       consent_status: ["pending", "granted", "revoked"],
       enrollment_status: [
