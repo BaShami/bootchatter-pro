@@ -257,6 +257,11 @@ function NewAnnouncementPage() {
                     Over the WhatsApp 1000-character limit. Shorten before sending.
                   </p>
                 )}
+                {!tooLong && splitWarn && (
+                  <p className="text-xs text-amber-600">
+                    Long messages may be split by WhatsApp. Consider breaking this into multiple announcements.
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
