@@ -5,7 +5,14 @@ import { z } from "zod";
 const emailInput = z.object({ email: z.string().trim().email().max(255) });
 const actionInput = z.object({ request_id: z.string().uuid() });
 
-/** Public: anyone can request a password reset. Always returns ok to avoid enumeration. */
+/**
+ * Public: request a password reset.
+ * - Teachers (bootcamp_members.role = 'teacher'): a row is inserted into
+ *   password_reset_requests so an admin can issue a new password manually.
+ * - Everyone else: returns isTeacher=false so the client can fall back to
+ *   the standard Supabase email reset flow.
+ * Always returns ok shape to avoid email enumeration.
+ */
 export const requestPasswordReset = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => emailInput.parse(d))
   .handler(async ({ data }) => {
@@ -18,14 +25,26 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
       .eq("email", email)
       .maybeSingle();
 
-    // Always record the request — even if no user matches, so the queue can show "unknown email".
-    await supabaseAdmin.from("password_reset_requests").insert({
-      email,
-      user_id: profile?.id ?? null,
-      status: "pending",
-    });
+    let isTeacher = false;
+    if (profile?.id) {
+      const { data: memberships } = await supabaseAdmin
+        .from("bootcamp_members")
+        .select("role")
+        .eq("user_id", profile.id);
+      const roles = (memberships ?? []).map((m) => m.role);
+      // Treat as teacher if they have any teacher role and no admin role anywhere.
+      isTeacher = roles.includes("teacher") && !roles.includes("admin");
+    }
 
-    return { ok: true };
+    if (isTeacher) {
+      await supabaseAdmin.from("password_reset_requests").insert({
+        email,
+        user_id: profile?.id ?? null,
+        status: "pending",
+      });
+    }
+
+    return { ok: true, isTeacher };
   });
 
 /** Platform admin: list pending password reset requests. */
