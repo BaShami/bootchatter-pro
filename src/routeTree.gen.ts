@@ -18,6 +18,7 @@ import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedLessonsIndexRouteImport } from './routes/_authenticated/lessons.index'
 import { Route as AuthenticatedBootcampsIndexRouteImport } from './routes/_authenticated/bootcamps.index'
+import { Route as AuthenticatedAnnouncementsIndexRouteImport } from './routes/_authenticated/announcements.index'
 import { Route as ApiPublicAskQuestionRouteImport } from './routes/api/public/ask-question'
 import { Route as AuthenticatedLessonsTestBrainRouteImport } from './routes/_authenticated/lessons.test-brain'
 import { Route as AuthenticatedLessonsIdRouteImport } from './routes/_authenticated/lessons.$id'
@@ -71,6 +72,12 @@ const AuthenticatedBootcampsIndexRoute =
     path: '/bootcamps/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAnnouncementsIndexRoute =
+  AuthenticatedAnnouncementsIndexRouteImport.update({
+    id: '/announcements/',
+    path: '/announcements/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicAskQuestionRoute = ApiPublicAskQuestionRouteImport.update({
   id: '/api/public/ask-question',
   path: '/api/public/ask-question',
@@ -118,6 +125,7 @@ export interface FileRoutesByFullPath {
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
+  '/announcements/': typeof AuthenticatedAnnouncementsIndexRoute
   '/bootcamps/': typeof AuthenticatedBootcampsIndexRoute
   '/lessons/': typeof AuthenticatedLessonsIndexRoute
   '/api/public/hooks/reconcile-indexing': typeof ApiPublicHooksReconcileIndexingRoute
@@ -134,6 +142,7 @@ export interface FileRoutesByTo {
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
+  '/announcements': typeof AuthenticatedAnnouncementsIndexRoute
   '/bootcamps': typeof AuthenticatedBootcampsIndexRoute
   '/lessons': typeof AuthenticatedLessonsIndexRoute
   '/api/public/hooks/reconcile-indexing': typeof ApiPublicHooksReconcileIndexingRoute
@@ -152,6 +161,7 @@ export interface FileRoutesById {
   '/_authenticated/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/_authenticated/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
+  '/_authenticated/announcements/': typeof AuthenticatedAnnouncementsIndexRoute
   '/_authenticated/bootcamps/': typeof AuthenticatedBootcampsIndexRoute
   '/_authenticated/lessons/': typeof AuthenticatedLessonsIndexRoute
   '/api/public/hooks/reconcile-indexing': typeof ApiPublicHooksReconcileIndexingRoute
@@ -170,6 +180,7 @@ export interface FileRouteTypes {
     | '/lessons/$id'
     | '/lessons/test-brain'
     | '/api/public/ask-question'
+    | '/announcements/'
     | '/bootcamps/'
     | '/lessons/'
     | '/api/public/hooks/reconcile-indexing'
@@ -186,6 +197,7 @@ export interface FileRouteTypes {
     | '/lessons/$id'
     | '/lessons/test-brain'
     | '/api/public/ask-question'
+    | '/announcements'
     | '/bootcamps'
     | '/lessons'
     | '/api/public/hooks/reconcile-indexing'
@@ -203,6 +215,7 @@ export interface FileRouteTypes {
     | '/_authenticated/lessons/$id'
     | '/_authenticated/lessons/test-brain'
     | '/api/public/ask-question'
+    | '/_authenticated/announcements/'
     | '/_authenticated/bootcamps/'
     | '/_authenticated/lessons/'
     | '/api/public/hooks/reconcile-indexing'
@@ -283,6 +296,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBootcampsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/announcements/': {
+      id: '/_authenticated/announcements/'
+      path: '/announcements'
+      fullPath: '/announcements/'
+      preLoaderRoute: typeof AuthenticatedAnnouncementsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/ask-question': {
       id: '/api/public/ask-question'
       path: '/api/public/ask-question'
@@ -335,6 +355,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBootcampsIdRoute: typeof AuthenticatedBootcampsIdRoute
   AuthenticatedLessonsIdRoute: typeof AuthenticatedLessonsIdRoute
   AuthenticatedLessonsTestBrainRoute: typeof AuthenticatedLessonsTestBrainRoute
+  AuthenticatedAnnouncementsIndexRoute: typeof AuthenticatedAnnouncementsIndexRoute
   AuthenticatedBootcampsIndexRoute: typeof AuthenticatedBootcampsIndexRoute
   AuthenticatedLessonsIndexRoute: typeof AuthenticatedLessonsIndexRoute
 }
@@ -347,6 +368,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBootcampsIdRoute: AuthenticatedBootcampsIdRoute,
   AuthenticatedLessonsIdRoute: AuthenticatedLessonsIdRoute,
   AuthenticatedLessonsTestBrainRoute: AuthenticatedLessonsTestBrainRoute,
+  AuthenticatedAnnouncementsIndexRoute: AuthenticatedAnnouncementsIndexRoute,
   AuthenticatedBootcampsIndexRoute: AuthenticatedBootcampsIndexRoute,
   AuthenticatedLessonsIndexRoute: AuthenticatedLessonsIndexRoute,
 }
