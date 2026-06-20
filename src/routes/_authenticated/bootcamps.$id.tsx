@@ -35,6 +35,7 @@ import { fetchBootcampMembersWithProfiles } from "@/lib/bootcamp-members";
 import { BootcampKnowledgeBaseCard } from "@/components/bootcamp-kb-card";
 import { TeachersCard } from "@/components/teachers-card";
 import { MakeWebhookCard } from "@/components/make-webhook-card";
+import { BootcampOnboardingChecklist } from "@/components/bootcamp-onboarding-checklist";
 
 export const Route = createFileRoute("/_authenticated/bootcamps/$id")({
   head: () => ({ meta: [{ title: "Bootcamp · Bootcamp Admin" }] }),
