@@ -13,6 +13,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated/students'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedBootcampsRouteImport } from './routes/_authenticated/bootcamps'
@@ -40,6 +41,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedStudentsRoute = AuthenticatedStudentsRouteImport.update({
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/bootcamps': typeof AuthenticatedBootcampsRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/students': typeof AuthenticatedStudentsRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
@@ -113,6 +120,7 @@ export interface FileRoutesByTo {
   '/bootcamps': typeof AuthenticatedBootcampsRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/students': typeof AuthenticatedStudentsRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
@@ -129,6 +137,7 @@ export interface FileRoutesById {
   '/_authenticated/bootcamps': typeof AuthenticatedBootcampsRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/students': typeof AuthenticatedStudentsRoute
+  '/invite/$token': typeof InviteTokenRoute
   '/_authenticated/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/_authenticated/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/_authenticated/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
@@ -145,6 +154,7 @@ export interface FileRouteTypes {
     | '/bootcamps'
     | '/dashboard'
     | '/students'
+    | '/invite/$token'
     | '/bootcamps/$id'
     | '/lessons/$id'
     | '/lessons/test-brain'
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/bootcamps'
     | '/dashboard'
     | '/students'
+    | '/invite/$token'
     | '/bootcamps/$id'
     | '/lessons/$id'
     | '/lessons/test-brain'
@@ -174,6 +185,7 @@ export interface FileRouteTypes {
     | '/_authenticated/bootcamps'
     | '/_authenticated/dashboard'
     | '/_authenticated/students'
+    | '/invite/$token'
     | '/_authenticated/bootcamps/$id'
     | '/_authenticated/lessons/$id'
     | '/_authenticated/lessons/test-brain'
@@ -187,6 +199,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  InviteTokenRoute: typeof InviteTokenRoute
   ApiPublicAskQuestionRoute: typeof ApiPublicAskQuestionRoute
   ApiPublicHooksReconcileIndexingRoute: typeof ApiPublicHooksReconcileIndexingRoute
 }
@@ -219,6 +232,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/students': {
@@ -327,6 +347,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  InviteTokenRoute: InviteTokenRoute,
   ApiPublicAskQuestionRoute: ApiPublicAskQuestionRoute,
   ApiPublicHooksReconcileIndexingRoute: ApiPublicHooksReconcileIndexingRoute,
 }
