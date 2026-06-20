@@ -234,6 +234,9 @@ function BootcampDetail() {
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-1">
+          <TeachersCard bootcampId={id!} />
+        </div>
+        <div className="lg:col-span-1">
           <BootcampKnowledgeBaseCard bootcampId={id!} />
         </div>
       </div>
