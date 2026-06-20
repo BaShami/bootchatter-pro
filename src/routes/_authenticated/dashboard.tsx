@@ -2,6 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { GraduationCap, Users, BookOpen, MessageSquare, TrendingUp, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { usePermissions } from "@/hooks/use-auth";
+import { TeacherDashboard } from "@/components/teacher-dashboard";
 import { PageHeader } from "@/components/page-header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,8 +11,15 @@ import { formatRelative } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard · Bootcamp Admin" }] }),
-  component: Dashboard,
+  component: DashboardRoute,
 });
+
+function DashboardRoute() {
+  const { data: perms, isLoading } = usePermissions();
+  if (isLoading) return null;
+  if (perms?.isTeacher) return <TeacherDashboard />;
+  return <Dashboard />;
+}
 
 function useStats() {
   return useQuery({
