@@ -207,7 +207,9 @@ function StudentsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{formatDate(s.enrolled_at)}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{formatRelative(s.last_active_at)}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {s.last_active_at ? formatRelative(s.last_active_at) : "Never messaged"}
+                      </TableCell>
                       <TableCell>
                         <StudentActions student={s} />
                       </TableCell>
