@@ -65,6 +65,23 @@ export const Route = createFileRoute("/api/public/ask-question")({
           });
         }
 
+        const rl = checkRateLimit(body.phone_number);
+        if (!rl.ok) {
+          return new Response(
+            JSON.stringify({
+              error: "Rate limited",
+              message: "Too many questions. Please wait a moment before asking again.",
+            }),
+            {
+              status: 429,
+              headers: {
+                "content-type": "application/json",
+                "retry-after": String(rl.retryAfterSec),
+              },
+            },
+          );
+        }
+
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
         // Resolve student from phone (server-side; Make.com cannot override bootcamp)
@@ -81,10 +98,14 @@ export const Route = createFileRoute("/api/public/ask-question")({
               "This phone number is not enrolled in any bootcamp. Please contact your instructor.",
           });
         }
-        if (
-          student.enrollment_status === "removed" ||
-          student.enrollment_status === "suspended"
-        ) {
+        if (student.enrollment_status === "suspended") {
+          return json(403, {
+            error: "Student suspended",
+            message:
+              "Your access has been temporarily paused. Please contact your instructor.",
+          });
+        }
+        if (student.enrollment_status === "removed") {
           return json(403, {
             error: "Student not active",
             message: "Your enrollment is not active. Please contact your instructor.",
