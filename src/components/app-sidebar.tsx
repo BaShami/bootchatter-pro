@@ -90,6 +90,20 @@ export function AppSidebar() {
             </Link>
           );
         })}
+        {perms?.isPlatformAdmin && (
+          <Link
+            to="/admin/password-requests"
+            className={cn(
+              "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
+              pathname.startsWith("/admin/password-requests")
+                ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                : "hover:bg-sidebar-accent/60 text-sidebar-foreground/80",
+            )}
+          >
+            <KeyRound className="h-4 w-4" />
+            <span>Password requests</span>
+          </Link>
+        )}
       </nav>
 
       <div className="border-t border-sidebar-border p-3">
