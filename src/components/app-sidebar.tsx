@@ -101,6 +101,7 @@ export function AppSidebar() {
             >
               <item.icon className="h-4 w-4" />
               <span>{item.label}</span>
+              {item.to === "/questions" ? <QuestionsBadge /> : null}
             </Link>
           );
         })}
