@@ -176,6 +176,7 @@ function NewAnnouncementPage() {
   }
 
   const tooLong = message.length > WHATSAPP_LIMIT;
+  const splitWarn = message.length > WHATSAPP_SPLIT_WARN;
   const charCountColor =
     message.length > WHATSAPP_LIMIT
       ? "text-destructive"
