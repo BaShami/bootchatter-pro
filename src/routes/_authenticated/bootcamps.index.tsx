@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/select";
 import { formatDate } from "@/lib/format";
 
-export const Route = createFileRoute("/_authenticated/bootcamps")({
+export const Route = createFileRoute("/_authenticated/bootcamps/")({
   head: () => ({ meta: [{ title: "Bootcamps · Bootcamp Admin" }] }),
   component: BootcampsPage,
 });
