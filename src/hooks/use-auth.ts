@@ -26,7 +26,7 @@ export function useCurrentUser(): User | null {
   return user;
 }
 
-/** Returns platform role + admin bootcamp ids for the current user. */
+/** Returns platform role + admin/teacher bootcamp ids for the current user. */
 export function usePermissions() {
   const { user } = useSession();
   return useQuery({
@@ -41,7 +41,12 @@ export function usePermissions() {
       const adminBootcampIds = (members ?? [])
         .filter((m) => m.role === "admin")
         .map((m) => m.bootcamp_id as string);
-      return { isPlatformAdmin, adminBootcampIds };
+      const teacherBootcampIds = (members ?? [])
+        .filter((m) => m.role === "teacher")
+        .map((m) => m.bootcamp_id as string);
+      const isTeacher =
+        !isPlatformAdmin && adminBootcampIds.length === 0 && teacherBootcampIds.length > 0;
+      return { isPlatformAdmin, adminBootcampIds, teacherBootcampIds, isTeacher };
     },
   });
 }
