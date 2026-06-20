@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
 import { UserPlus, Copy, X, Clock } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useBootcamps } from "@/hooks/use-bootcamps";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +25,7 @@ import {
   listBootcampInvites,
   revokeInvite,
 } from "@/lib/invites.functions";
+import { fetchBootcampMembersWithProfiles } from "@/lib/bootcamp-members";
 
 type Profile = { email?: string; first_name?: string; last_name?: string } | null;
 
@@ -33,18 +33,12 @@ export function TeachersCard({ bootcampId }: { bootcampId: string }) {
   const teachers = useQuery({
     queryKey: ["bootcamp-teachers", bootcampId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("bootcamp_members")
-        .select(
-          "id, user_id, role, profiles:profiles!bootcamp_members_user_id_fkey(email, first_name, last_name)",
-        )
-        .eq("bootcamp_id", bootcampId)
-        .eq("role", "teacher");
-      if (error) {
+      try {
+        return await fetchBootcampMembersWithProfiles(bootcampId, "teacher");
+      } catch (error) {
         console.error("[TeachersCard] failed to load active teachers:", error);
         throw error;
       }
-      return data ?? [];
     },
   });
 
