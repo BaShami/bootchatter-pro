@@ -178,7 +178,8 @@ function LessonsPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState text="No lessons yet. Create one to start building your AI knowledge base." />
+        <EmptyState text="No lessons yet. Upload a transcript to get started." />
+
       ) : (
         <div className="grid gap-3">
           {filtered.map((l) => (
@@ -227,15 +228,26 @@ function LessonsPage() {
                         <span>Published {formatDate(l.published_at)}</span>
                       ) : null}
                     </div>
-                    {isTeacher && (
-                      <div className="mt-3">
+                    {isTeacher ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
                         <Button asChild size="sm" variant="outline">
                           <Link to="/lessons/$id" params={{ id: l.id }}>
                             <Upload className="h-3.5 w-3.5 mr-1.5" /> Upload transcript
                           </Link>
                         </Button>
+                        {l.status === "ready" ? (
+                          <Button asChild size="sm">
+                            <Link to="/lessons/$id" params={{ id: l.id }}>Publish</Link>
+                          </Button>
+                        ) : null}
                       </div>
-                    )}
+                    ) : l.status === "ready" ? (
+                      <div className="mt-3">
+                        <Button asChild size="sm">
+                          <Link to="/lessons/$id" params={{ id: l.id }}>Publish</Link>
+                        </Button>
+                      </div>
+                    ) : null}
                   </div>
                 </CardContent>
               </Card>

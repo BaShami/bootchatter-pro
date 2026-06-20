@@ -172,16 +172,26 @@ function NewAnnouncementPage() {
 
   return (
     <div className="max-w-5xl">
-      <Link
-        to="/announcements"
-        className="text-sm text-muted-foreground hover:text-foreground inline-flex items-center mb-3"
-      >
-        <ArrowLeft className="h-3.5 w-3.5 mr-1" /> All announcements
-      </Link>
+      <nav aria-label="breadcrumb" className="mb-3">
+        <ol className="flex items-center gap-1.5 text-sm text-muted-foreground">
+          <li>
+            <Link to="/dashboard" className="hover:text-foreground">Home</Link>
+          </li>
+          <li aria-hidden="true">/</li>
+          <li>
+            <Link to="/announcements" className="hover:text-foreground inline-flex items-center">
+              <ArrowLeft className="h-3.5 w-3.5 mr-1" /> Announcements
+            </Link>
+          </li>
+          <li aria-hidden="true">/</li>
+          <li className="text-foreground font-medium">New</li>
+        </ol>
+      </nav>
       <PageHeader
         title="New announcement"
         description="Compose a WhatsApp announcement and send it via your Make webhook."
       />
+
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-5">

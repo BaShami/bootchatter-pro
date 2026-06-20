@@ -35,6 +35,7 @@ import { fetchBootcampMembersWithProfiles } from "@/lib/bootcamp-members";
 import { BootcampKnowledgeBaseCard } from "@/components/bootcamp-kb-card";
 import { TeachersCard } from "@/components/teachers-card";
 import { MakeWebhookCard } from "@/components/make-webhook-card";
+import { BootcampOnboardingChecklist } from "@/components/bootcamp-onboarding-checklist";
 
 export const Route = createFileRoute("/_authenticated/bootcamps/$id")({
   head: () => ({ meta: [{ title: "Bootcamp · Bootcamp Admin" }] }),
@@ -162,6 +163,11 @@ function BootcampDetail() {
         <MetricCard label="Questions" value={studentCount.data?.questions ?? 0} />
         <MetricCard label="Created" value={formatDate(bootcamp.created_at)} />
       </div>
+
+      <div className="mb-6">
+        <BootcampOnboardingChecklist bootcampId={id!} />
+      </div>
+
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2">

@@ -171,11 +171,11 @@ function StudentsPage() {
             <div className="p-6"><Skeleton className="h-40 w-full" /></div>
           ) : filtered.length === 0 ? (
             <div className="p-10 text-center">
-              <h3 className="font-medium">No students yet</h3>
+              <h3 className="font-medium">No students added yet</h3>
               <p className="text-sm text-muted-foreground mt-1">
                 {(bootcamps ?? []).length === 0
                   ? "Create a bootcamp first, then add students to it."
-                  : "Add your first student to start receiving questions from Make.com."}
+                  : "Add students with their WhatsApp number to get started."}
               </p>
             </div>
           ) : (
@@ -207,7 +207,9 @@ function StudentsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{formatDate(s.enrolled_at)}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{formatRelative(s.last_active_at)}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {s.last_active_at ? formatRelative(s.last_active_at) : "Never messaged"}
+                      </TableCell>
                       <TableCell>
                         <StudentActions student={s} />
                       </TableCell>

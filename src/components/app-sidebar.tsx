@@ -12,6 +12,7 @@ import {
   Sparkles,
   KeyRound,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, usePermissions } from "@/hooks/use-auth";
 import { initials } from "@/lib/format";
@@ -100,6 +101,7 @@ export function AppSidebar() {
             >
               <item.icon className="h-4 w-4" />
               <span>{item.label}</span>
+              {item.to === "/questions" ? <QuestionsBadge /> : null}
             </Link>
           );
         })}
@@ -137,5 +139,38 @@ export function AppSidebar() {
         </Button>
       </div>
     </aside>
+  );
+}
+
+function QuestionsBadge() {
+  const { data: perms } = usePermissions();
+  const accessibleIds = [
+    ...(perms?.adminBootcampIds ?? []),
+    ...(perms?.teacherBootcampIds ?? []),
+  ];
+  const { data: count } = useQuery({
+    queryKey: ["unreviewed-questions-count", perms?.isPlatformAdmin, accessibleIds.join(",")],
+    enabled: !!perms,
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+      let q = supabase
+        .from("questions")
+        .select("id", { count: "exact", head: true })
+        .eq("review_status", "unreviewed")
+        .gte("created_at", since);
+      if (!perms?.isPlatformAdmin) {
+        if (accessibleIds.length === 0) return 0;
+        q = q.in("bootcamp_id", accessibleIds);
+      }
+      const { count } = await q;
+      return count ?? 0;
+    },
+  });
+  if (!count) return null;
+  return (
+    <span className="ml-auto inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-primary text-primary-foreground text-[10px] font-semibold tabular-nums">
+      {count > 99 ? "99+" : count}
+    </span>
   );
 }
