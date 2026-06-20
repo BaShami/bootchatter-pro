@@ -3,7 +3,6 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Megaphone, Plus } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { usePermissions } from "@/hooks/use-auth";
 import { useBootcamps } from "@/hooks/use-bootcamps";
 import { PageHeader } from "@/components/page-header";
