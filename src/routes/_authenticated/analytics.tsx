@@ -238,7 +238,7 @@ function AnalyticsPage() {
                     borderRadius: "0.5rem",
                   }}
                 />
-                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -296,8 +296,8 @@ function AnalyticsPage() {
           {monthly.isLoading ? (
             <Skeleton className="h-64 w-full" />
           ) : (
-            <ResponsiveContainer width="100%" height={260}>
-              <LineChart data={timeSeries}>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={timeSeries} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                 <YAxis allowDecimals={false} stroke="hsl(var(--muted-foreground))" fontSize={12} />
@@ -311,7 +311,7 @@ function AnalyticsPage() {
                 <Line
                   type="monotone"
                   dataKey="count"
-                  stroke="hsl(var(--primary))"
+                  stroke="#3b82f6"
                   strokeWidth={2}
                   dot={false}
                 />
