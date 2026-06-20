@@ -18,10 +18,13 @@ import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedLessonsIndexRouteImport } from './routes/_authenticated/lessons.index'
 import { Route as AuthenticatedBootcampsIndexRouteImport } from './routes/_authenticated/bootcamps.index'
+import { Route as AuthenticatedAnnouncementsIndexRouteImport } from './routes/_authenticated/announcements.index'
 import { Route as ApiPublicAskQuestionRouteImport } from './routes/api/public/ask-question'
 import { Route as AuthenticatedLessonsTestBrainRouteImport } from './routes/_authenticated/lessons.test-brain'
 import { Route as AuthenticatedLessonsIdRouteImport } from './routes/_authenticated/lessons.$id'
 import { Route as AuthenticatedBootcampsIdRouteImport } from './routes/_authenticated/bootcamps.$id'
+import { Route as AuthenticatedAnnouncementsNewRouteImport } from './routes/_authenticated/announcements.new'
+import { Route as AuthenticatedAnnouncementsIdRouteImport } from './routes/_authenticated/announcements.$id'
 import { Route as AuthenticatedAdminPasswordRequestsRouteImport } from './routes/_authenticated/admin.password-requests'
 import { Route as ApiPublicHooksReconcileIndexingRouteImport } from './routes/api/public/hooks/reconcile-indexing'
 
@@ -71,6 +74,12 @@ const AuthenticatedBootcampsIndexRoute =
     path: '/bootcamps/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAnnouncementsIndexRoute =
+  AuthenticatedAnnouncementsIndexRouteImport.update({
+    id: '/announcements/',
+    path: '/announcements/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicAskQuestionRoute = ApiPublicAskQuestionRouteImport.update({
   id: '/api/public/ask-question',
   path: '/api/public/ask-question',
@@ -91,6 +100,18 @@ const AuthenticatedBootcampsIdRoute =
   AuthenticatedBootcampsIdRouteImport.update({
     id: '/bootcamps/$id',
     path: '/bootcamps/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAnnouncementsNewRoute =
+  AuthenticatedAnnouncementsNewRouteImport.update({
+    id: '/announcements/new',
+    path: '/announcements/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAnnouncementsIdRoute =
+  AuthenticatedAnnouncementsIdRouteImport.update({
+    id: '/announcements/$id',
+    path: '/announcements/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAdminPasswordRequestsRoute =
@@ -114,10 +135,13 @@ export interface FileRoutesByFullPath {
   '/students': typeof AuthenticatedStudentsRoute
   '/invite/$token': typeof InviteTokenRoute
   '/admin/password-requests': typeof AuthenticatedAdminPasswordRequestsRoute
+  '/announcements/$id': typeof AuthenticatedAnnouncementsIdRoute
+  '/announcements/new': typeof AuthenticatedAnnouncementsNewRoute
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
+  '/announcements/': typeof AuthenticatedAnnouncementsIndexRoute
   '/bootcamps/': typeof AuthenticatedBootcampsIndexRoute
   '/lessons/': typeof AuthenticatedLessonsIndexRoute
   '/api/public/hooks/reconcile-indexing': typeof ApiPublicHooksReconcileIndexingRoute
@@ -130,10 +154,13 @@ export interface FileRoutesByTo {
   '/students': typeof AuthenticatedStudentsRoute
   '/invite/$token': typeof InviteTokenRoute
   '/admin/password-requests': typeof AuthenticatedAdminPasswordRequestsRoute
+  '/announcements/$id': typeof AuthenticatedAnnouncementsIdRoute
+  '/announcements/new': typeof AuthenticatedAnnouncementsNewRoute
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
+  '/announcements': typeof AuthenticatedAnnouncementsIndexRoute
   '/bootcamps': typeof AuthenticatedBootcampsIndexRoute
   '/lessons': typeof AuthenticatedLessonsIndexRoute
   '/api/public/hooks/reconcile-indexing': typeof ApiPublicHooksReconcileIndexingRoute
@@ -148,10 +175,13 @@ export interface FileRoutesById {
   '/_authenticated/students': typeof AuthenticatedStudentsRoute
   '/invite/$token': typeof InviteTokenRoute
   '/_authenticated/admin/password-requests': typeof AuthenticatedAdminPasswordRequestsRoute
+  '/_authenticated/announcements/$id': typeof AuthenticatedAnnouncementsIdRoute
+  '/_authenticated/announcements/new': typeof AuthenticatedAnnouncementsNewRoute
   '/_authenticated/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/_authenticated/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/_authenticated/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
+  '/_authenticated/announcements/': typeof AuthenticatedAnnouncementsIndexRoute
   '/_authenticated/bootcamps/': typeof AuthenticatedBootcampsIndexRoute
   '/_authenticated/lessons/': typeof AuthenticatedLessonsIndexRoute
   '/api/public/hooks/reconcile-indexing': typeof ApiPublicHooksReconcileIndexingRoute
@@ -166,10 +196,13 @@ export interface FileRouteTypes {
     | '/students'
     | '/invite/$token'
     | '/admin/password-requests'
+    | '/announcements/$id'
+    | '/announcements/new'
     | '/bootcamps/$id'
     | '/lessons/$id'
     | '/lessons/test-brain'
     | '/api/public/ask-question'
+    | '/announcements/'
     | '/bootcamps/'
     | '/lessons/'
     | '/api/public/hooks/reconcile-indexing'
@@ -182,10 +215,13 @@ export interface FileRouteTypes {
     | '/students'
     | '/invite/$token'
     | '/admin/password-requests'
+    | '/announcements/$id'
+    | '/announcements/new'
     | '/bootcamps/$id'
     | '/lessons/$id'
     | '/lessons/test-brain'
     | '/api/public/ask-question'
+    | '/announcements'
     | '/bootcamps'
     | '/lessons'
     | '/api/public/hooks/reconcile-indexing'
@@ -199,10 +235,13 @@ export interface FileRouteTypes {
     | '/_authenticated/students'
     | '/invite/$token'
     | '/_authenticated/admin/password-requests'
+    | '/_authenticated/announcements/$id'
+    | '/_authenticated/announcements/new'
     | '/_authenticated/bootcamps/$id'
     | '/_authenticated/lessons/$id'
     | '/_authenticated/lessons/test-brain'
     | '/api/public/ask-question'
+    | '/_authenticated/announcements/'
     | '/_authenticated/bootcamps/'
     | '/_authenticated/lessons/'
     | '/api/public/hooks/reconcile-indexing'
@@ -283,6 +322,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBootcampsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/announcements/': {
+      id: '/_authenticated/announcements/'
+      path: '/announcements'
+      fullPath: '/announcements/'
+      preLoaderRoute: typeof AuthenticatedAnnouncementsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/ask-question': {
       id: '/api/public/ask-question'
       path: '/api/public/ask-question'
@@ -311,6 +357,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBootcampsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/announcements/new': {
+      id: '/_authenticated/announcements/new'
+      path: '/announcements/new'
+      fullPath: '/announcements/new'
+      preLoaderRoute: typeof AuthenticatedAnnouncementsNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/announcements/$id': {
+      id: '/_authenticated/announcements/$id'
+      path: '/announcements/$id'
+      fullPath: '/announcements/$id'
+      preLoaderRoute: typeof AuthenticatedAnnouncementsIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/password-requests': {
       id: '/_authenticated/admin/password-requests'
       path: '/admin/password-requests'
@@ -332,9 +392,12 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRoute
   AuthenticatedAdminPasswordRequestsRoute: typeof AuthenticatedAdminPasswordRequestsRoute
+  AuthenticatedAnnouncementsIdRoute: typeof AuthenticatedAnnouncementsIdRoute
+  AuthenticatedAnnouncementsNewRoute: typeof AuthenticatedAnnouncementsNewRoute
   AuthenticatedBootcampsIdRoute: typeof AuthenticatedBootcampsIdRoute
   AuthenticatedLessonsIdRoute: typeof AuthenticatedLessonsIdRoute
   AuthenticatedLessonsTestBrainRoute: typeof AuthenticatedLessonsTestBrainRoute
+  AuthenticatedAnnouncementsIndexRoute: typeof AuthenticatedAnnouncementsIndexRoute
   AuthenticatedBootcampsIndexRoute: typeof AuthenticatedBootcampsIndexRoute
   AuthenticatedLessonsIndexRoute: typeof AuthenticatedLessonsIndexRoute
 }
@@ -344,9 +407,12 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStudentsRoute: AuthenticatedStudentsRoute,
   AuthenticatedAdminPasswordRequestsRoute:
     AuthenticatedAdminPasswordRequestsRoute,
+  AuthenticatedAnnouncementsIdRoute: AuthenticatedAnnouncementsIdRoute,
+  AuthenticatedAnnouncementsNewRoute: AuthenticatedAnnouncementsNewRoute,
   AuthenticatedBootcampsIdRoute: AuthenticatedBootcampsIdRoute,
   AuthenticatedLessonsIdRoute: AuthenticatedLessonsIdRoute,
   AuthenticatedLessonsTestBrainRoute: AuthenticatedLessonsTestBrainRoute,
+  AuthenticatedAnnouncementsIndexRoute: AuthenticatedAnnouncementsIndexRoute,
   AuthenticatedBootcampsIndexRoute: AuthenticatedBootcampsIndexRoute,
   AuthenticatedLessonsIndexRoute: AuthenticatedLessonsIndexRoute,
 }

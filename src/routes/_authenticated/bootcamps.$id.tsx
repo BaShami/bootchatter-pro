@@ -34,6 +34,7 @@ import { formatDate } from "@/lib/format";
 import { fetchBootcampMembersWithProfiles } from "@/lib/bootcamp-members";
 import { BootcampKnowledgeBaseCard } from "@/components/bootcamp-kb-card";
 import { TeachersCard } from "@/components/teachers-card";
+import { MakeWebhookCard } from "@/components/make-webhook-card";
 
 export const Route = createFileRoute("/_authenticated/bootcamps/$id")({
   head: () => ({ meta: [{ title: "Bootcamp · Bootcamp Admin" }] }),
@@ -251,6 +252,9 @@ function BootcampDetail() {
         </div>
         <div className="lg:col-span-1">
           <BootcampKnowledgeBaseCard bootcampId={id!} />
+        </div>
+        <div className="lg:col-span-1">
+          <MakeWebhookCard bootcampId={id!} />
         </div>
       </div>
     </div>

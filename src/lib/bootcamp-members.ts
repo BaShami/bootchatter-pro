@@ -2,9 +2,9 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 
 export type BootcampMemberProfile = {
-  email?: string;
-  first_name?: string;
-  last_name?: string;
+  email: string | null;
+  first_name: string | null;
+  last_name: string | null;
 };
 
 export type BootcampMemberWithProfile = {
