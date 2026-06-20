@@ -14,11 +14,7 @@ const createInput = z.object({
 const idInput = z.object({ id: z.string().uuid() });
 const bootcampInput = z.object({ bootcamp_id: z.string().uuid() });
 
-async function assertCanWrite(
-  supabase: Awaited<ReturnType<typeof requireSupabaseAuth>> extends never ? never : any,
-  userId: string,
-  bootcampId: string,
-) {
+async function assertCanWrite(supabase: any, userId: string, bootcampId: string) {
   const { data: isTeacher, error } = await supabase.rpc("is_bootcamp_teacher", {
     _user_id: userId,
     _bootcamp_id: bootcampId,
