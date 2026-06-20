@@ -112,6 +112,14 @@ function NewAnnouncementPage() {
 
   const createFn = useServerFn(createAnnouncement);
   const sendFn = useServerFn(sendAnnouncement);
+  const webhookFn = useServerFn(getBootcampWebhook);
+
+  const webhookQ = useQuery({
+    queryKey: ["bootcamp-webhook", activeId],
+    enabled: !!activeId,
+    queryFn: () => webhookFn({ data: { bootcamp_id: activeId! } }),
+  });
+  const webhookConfigured = !!webhookQ.data?.make_webhook_url?.trim();
 
   const sendMutation = useMutation({
     mutationFn: async () => {
