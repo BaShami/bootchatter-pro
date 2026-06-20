@@ -48,17 +48,19 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const TEACHER_STATUS_LABEL: Record<string, string> = {
-  draft: "Draft",
-  processing: "Processing",
-  ready: "Processing",
-  failed: "Draft",
+  draft: "Not started",
+  processing: "Processing…",
+  ready: "Ready to publish",
+  failed: "Upload failed — try again",
   published: "Live",
-  archived: "Draft",
+  archived: "Not started",
 };
 const TEACHER_STATUS_STYLES: Record<string, string> = {
-  Draft: "bg-muted text-muted-foreground",
-  Processing: "bg-primary/10 text-primary",
+  "Not started": "bg-muted text-muted-foreground",
+  "Processing…": "bg-primary/10 text-primary",
+  "Ready to publish": "bg-amber-100 text-amber-800",
   Live: "bg-emerald-100 text-emerald-800",
+  "Upload failed — try again": "bg-destructive/10 text-destructive",
 };
 
 function LessonsPage() {
