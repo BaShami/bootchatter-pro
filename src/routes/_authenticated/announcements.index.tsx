@@ -162,6 +162,3 @@ function AnnouncementsListPage() {
     </div>
   );
 }
-
-// Suppress unused import warning if formatDate becomes unused later
-void supabase;
