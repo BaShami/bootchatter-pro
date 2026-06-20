@@ -40,7 +40,10 @@ export function TeachersCard({ bootcampId }: { bootcampId: string }) {
         )
         .eq("bootcamp_id", bootcampId)
         .eq("role", "teacher");
-      if (error) throw error;
+      if (error) {
+        console.error("[TeachersCard] failed to load active teachers:", error);
+        throw error;
+      }
       return data ?? [];
     },
   });
@@ -62,6 +65,11 @@ export function TeachersCard({ bootcampId }: { bootcampId: string }) {
           <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">Active</div>
           {teachers.isLoading ? (
             <Skeleton className="h-16 w-full" />
+          ) : teachers.isError ? (
+            <p className="text-sm text-destructive">
+              Could not load teachers.{" "}
+              {teachers.error instanceof Error ? teachers.error.message : "Please try again."}
+            </p>
           ) : teachers.data?.length === 0 ? (
             <p className="text-sm text-muted-foreground">No teachers yet.</p>
           ) : (
@@ -197,6 +205,7 @@ function InviteTeacherDialog({ bootcampId }: { bootcampId: string }) {
       const fullUrl = `${window.location.origin}${res.url}`;
       setCreatedUrl(fullUrl);
       qc.invalidateQueries({ queryKey: ["bootcamp-invites", bootcampId] });
+      qc.invalidateQueries({ queryKey: ["bootcamp-teachers", bootcampId] });
       toast.success("Invite created");
     },
     onError: (e: Error) => toast.error(e.message),

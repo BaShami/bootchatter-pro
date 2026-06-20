@@ -57,7 +57,7 @@ export const createTeacherInvite = createServerFn({ method: "POST" })
     return { invite: row, url: `/invite/${row.token}` };
   });
 
-/** List invites that touch a given bootcamp. */
+/** List pending invites that touch a given bootcamp. */
 export const listBootcampInvites = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) => bootcampInput.parse(d))
@@ -67,6 +67,7 @@ export const listBootcampInvites = createServerFn({ method: "GET" })
       .from("invites")
       .select("id, email, bootcamp_ids, status, token, expires_at, created_at, accepted_at")
       .contains("bootcamp_ids", [data.bootcamp_id])
+      .eq("status", "pending")
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return { invites: rows ?? [] };
@@ -119,10 +120,22 @@ export const acceptInvite = createServerFn({ method: "POST" })
       throw new Error("Invite has expired");
     }
 
+    const inviteEmail = inviteRow.email.trim().toLowerCase();
+    const teacherRole = inviteRow.role === "teacher" ? "teacher" : inviteRow.role;
+    const bootcampIds = Array.isArray(inviteRow.bootcamp_ids)
+      ? inviteRow.bootcamp_ids
+      : [];
+    if (bootcampIds.length === 0) {
+      throw new Error("Invite has no bootcamp assignments");
+    }
+
+    let newUserId: string;
+    let createdNewUser = false;
+
     // Create the auth user (email-confirmed so they can sign in immediately).
     const { data: created, error: createError } =
       await supabaseAdmin.auth.admin.createUser({
-        email: inviteRow.email,
+        email: inviteEmail,
         password: data.password,
         email_confirm: true,
         user_metadata: {
@@ -130,33 +143,136 @@ export const acceptInvite = createServerFn({ method: "POST" })
           last_name: data.last_name,
         },
       });
-    if (createError || !created.user) {
-      throw new Error(createError?.message ?? "Could not create account");
+
+    if (!createError && created?.user) {
+      newUserId = created.user.id;
+      createdNewUser = true;
+    } else {
+      const duplicate =
+        createError &&
+        (createError.status === 422 ||
+          /already|registered|exists/i.test(createError.message));
+
+      if (!duplicate) {
+        console.error("[acceptInvite] createUser failed:", createError);
+        throw new Error(createError?.message ?? "Could not create account");
+      }
+
+      const { data: profile, error: profileLookupError } = await supabaseAdmin
+        .from("profiles")
+        .select("id")
+        .eq("email", inviteEmail)
+        .maybeSingle();
+      if (profileLookupError) {
+        console.error("[acceptInvite] profile lookup failed:", profileLookupError);
+        throw new Error(profileLookupError.message);
+      }
+      if (!profile) {
+        throw new Error("An account with this email already exists. Sign in instead.");
+      }
+
+      newUserId = profile.id;
+      const { error: updateUserError } = await supabaseAdmin.auth.admin.updateUserById(
+        newUserId,
+        {
+          password: data.password,
+          email_confirm: true,
+          user_metadata: {
+            first_name: data.first_name,
+            last_name: data.last_name,
+          },
+        },
+      );
+      if (updateUserError) {
+        console.error("[acceptInvite] updateUserById failed:", updateUserError);
+        throw new Error(updateUserError.message);
+      }
     }
-    const newUserId = created.user.id;
 
     // The handle_new_user trigger creates the profile; ensure first/last name are set.
-    await supabaseAdmin
+    const { error: profileUpdateError } = await supabaseAdmin
       .from("profiles")
       .update({ first_name: data.first_name, last_name: data.last_name })
       .eq("id", newUserId);
-
-    // Memberships
-    const memberships = inviteRow.bootcamp_ids.map((bid: string) => ({
-      bootcamp_id: bid,
-      user_id: newUserId,
-      role: inviteRow.role,
-    }));
-    const { error: memberError } = await supabaseAdmin
-      .from("bootcamp_members")
-      .insert(memberships);
-    if (memberError) {
-      // Roll back the auth user so the invite stays usable.
-      await supabaseAdmin.auth.admin.deleteUser(newUserId);
-      throw new Error(memberError.message);
+    if (profileUpdateError) {
+      console.error("[acceptInvite] profile update failed:", profileUpdateError);
     }
 
-    await supabaseAdmin
+    const memberships = bootcampIds.map((bid) => ({
+      bootcamp_id: bid,
+      user_id: newUserId,
+      role: teacherRole,
+    }));
+
+    const { data: insertedMembers, error: memberError } = await supabaseAdmin
+      .from("bootcamp_members")
+      .insert(memberships)
+      .select("id, bootcamp_id, user_id, role");
+
+    if (memberError?.code === "23505") {
+      console.warn(
+        "[acceptInvite] bootcamp_members already exist for user, verifying:",
+        newUserId,
+        bootcampIds,
+      );
+      const { data: existingMembers, error: fetchError } = await supabaseAdmin
+        .from("bootcamp_members")
+        .select("id, bootcamp_id, user_id, role")
+        .eq("user_id", newUserId)
+        .in("bootcamp_id", bootcampIds);
+      if (fetchError || !existingMembers?.length) {
+        console.error(
+          "[acceptInvite] could not verify existing memberships:",
+          fetchError ?? memberError,
+        );
+        if (createdNewUser) {
+          await supabaseAdmin.auth.admin.deleteUser(newUserId);
+        }
+        throw new Error(memberError.message);
+      }
+      for (const member of existingMembers) {
+        if (member.role !== teacherRole && member.role !== "admin") {
+          const { error: roleError } = await supabaseAdmin
+            .from("bootcamp_members")
+            .update({ role: teacherRole })
+            .eq("id", member.id);
+          if (roleError) {
+            console.error("[acceptInvite] failed to update member role:", roleError);
+          }
+        }
+      }
+    } else if (memberError) {
+      console.error(
+        "[acceptInvite] bootcamp_members insert failed:",
+        memberError.message,
+        memberships,
+      );
+      if (createdNewUser) {
+        await supabaseAdmin.auth.admin.deleteUser(newUserId);
+      }
+      throw new Error(memberError.message);
+    } else if (!insertedMembers?.length) {
+      console.error(
+        "[acceptInvite] bootcamp_members insert returned no rows for invite",
+        inviteRow.id,
+        memberships,
+      );
+      if (createdNewUser) {
+        await supabaseAdmin.auth.admin.deleteUser(newUserId);
+      }
+      throw new Error("Failed to create bootcamp memberships");
+    } else {
+      console.info(
+        "[acceptInvite] created memberships:",
+        insertedMembers.map((m) => ({
+          bootcamp_id: m.bootcamp_id,
+          user_id: m.user_id,
+          role: m.role,
+        })),
+      );
+    }
+
+    const { error: inviteUpdateError } = await supabaseAdmin
       .from("invites")
       .update({
         status: "accepted",
@@ -164,6 +280,10 @@ export const acceptInvite = createServerFn({ method: "POST" })
         accepted_user_id: newUserId,
       })
       .eq("id", inviteRow.id);
+    if (inviteUpdateError) {
+      console.error("[acceptInvite] invite status update failed:", inviteUpdateError);
+      throw new Error(inviteUpdateError.message);
+    }
 
-    return { ok: true, email: inviteRow.email };
+    return { ok: true, email: inviteEmail };
   });
