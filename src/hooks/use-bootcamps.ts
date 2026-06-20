@@ -26,18 +26,26 @@ export function useBootcamps() {
   });
 }
 
+export type BootcampDetailRow = BootcampRow & {
+  created_by: string | null;
+  updated_at: string;
+};
+
 export function useBootcamp(id: string | undefined) {
   return useQuery({
     queryKey: ["bootcamps", id],
     enabled: !!id,
-    queryFn: async () => {
+    queryFn: async (): Promise<BootcampDetailRow | null> => {
       const { data, error } = await supabase
         .from("bootcamps")
         .select("*")
         .eq("id", id!)
         .maybeSingle();
-      if (error) throw error;
-      return data;
+      if (error) {
+        console.error("[useBootcamp] failed to load bootcamp:", error);
+        throw error;
+      }
+      return data as BootcampDetailRow | null;
     },
   });
 }

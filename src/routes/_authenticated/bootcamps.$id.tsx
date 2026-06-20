@@ -52,7 +52,7 @@ function BootcampDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { data: bootcamp, isLoading } = useBootcamp(id);
+  const { data: bootcamp, isLoading, isError, error, refetch } = useBootcamp(id);
 
   const studentCount = useQuery({
     queryKey: ["bootcamp-counts", id],
@@ -74,7 +74,8 @@ function BootcampDetail() {
       const { data, error } = await supabase
         .from("bootcamp_members")
         .select("id, user_id, role, profiles:profiles!bootcamp_members_user_id_fkey(email, first_name, last_name)")
-        .eq("bootcamp_id", id!);
+        .eq("bootcamp_id", id!)
+        .eq("role", "admin");
       if (error) throw error;
       return data ?? [];
     },
@@ -116,6 +117,25 @@ function BootcampDetail() {
       <div>
         <Skeleton className="h-8 w-48 mb-4" />
         <Skeleton className="h-72 w-full" />
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div>
+        <PageHeader title="Could not load bootcamp" />
+        <p className="text-sm text-muted-foreground mb-4">
+          {error instanceof Error ? error.message : "Something went wrong while loading this bootcamp."}
+        </p>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => navigate({ to: "/bootcamps" })}>
+            <ArrowLeft className="h-4 w-4 mr-1.5" /> Back to bootcamps
+          </Button>
+          <Button variant="outline" onClick={() => refetch()}>
+            Try again
+          </Button>
+        </div>
       </div>
     );
   }

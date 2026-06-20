@@ -16,8 +16,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated/students'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedBootcampsRouteImport } from './routes/_authenticated/bootcamps'
 import { Route as AuthenticatedLessonsIndexRouteImport } from './routes/_authenticated/lessons.index'
+import { Route as AuthenticatedBootcampsIndexRouteImport } from './routes/_authenticated/bootcamps.index'
 import { Route as ApiPublicAskQuestionRouteImport } from './routes/api/public/ask-question'
 import { Route as AuthenticatedLessonsTestBrainRouteImport } from './routes/_authenticated/lessons.test-brain'
 import { Route as AuthenticatedLessonsIdRouteImport } from './routes/_authenticated/lessons.$id'
@@ -59,15 +59,16 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedBootcampsRoute = AuthenticatedBootcampsRouteImport.update({
-  id: '/bootcamps',
-  path: '/bootcamps',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedLessonsIndexRoute =
   AuthenticatedLessonsIndexRouteImport.update({
     id: '/lessons/',
     path: '/lessons/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedBootcampsIndexRoute =
+  AuthenticatedBootcampsIndexRouteImport.update({
+    id: '/bootcamps/',
+    path: '/bootcamps/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const ApiPublicAskQuestionRoute = ApiPublicAskQuestionRouteImport.update({
@@ -88,9 +89,9 @@ const AuthenticatedLessonsIdRoute = AuthenticatedLessonsIdRouteImport.update({
 } as any)
 const AuthenticatedBootcampsIdRoute =
   AuthenticatedBootcampsIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => AuthenticatedBootcampsRoute,
+    id: '/bootcamps/$id',
+    path: '/bootcamps/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAdminPasswordRequestsRoute =
   AuthenticatedAdminPasswordRequestsRouteImport.update({
@@ -109,7 +110,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/bootcamps': typeof AuthenticatedBootcampsRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/students': typeof AuthenticatedStudentsRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -118,6 +118,7 @@ export interface FileRoutesByFullPath {
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
+  '/bootcamps/': typeof AuthenticatedBootcampsIndexRoute
   '/lessons/': typeof AuthenticatedLessonsIndexRoute
   '/api/public/hooks/reconcile-indexing': typeof ApiPublicHooksReconcileIndexingRoute
 }
@@ -125,7 +126,6 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/bootcamps': typeof AuthenticatedBootcampsRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/students': typeof AuthenticatedStudentsRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -134,6 +134,7 @@ export interface FileRoutesByTo {
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
+  '/bootcamps': typeof AuthenticatedBootcampsIndexRoute
   '/lessons': typeof AuthenticatedLessonsIndexRoute
   '/api/public/hooks/reconcile-indexing': typeof ApiPublicHooksReconcileIndexingRoute
 }
@@ -143,7 +144,6 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/_authenticated/bootcamps': typeof AuthenticatedBootcampsRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/students': typeof AuthenticatedStudentsRoute
   '/invite/$token': typeof InviteTokenRoute
@@ -152,6 +152,7 @@ export interface FileRoutesById {
   '/_authenticated/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/_authenticated/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
   '/api/public/ask-question': typeof ApiPublicAskQuestionRoute
+  '/_authenticated/bootcamps/': typeof AuthenticatedBootcampsIndexRoute
   '/_authenticated/lessons/': typeof AuthenticatedLessonsIndexRoute
   '/api/public/hooks/reconcile-indexing': typeof ApiPublicHooksReconcileIndexingRoute
 }
@@ -161,7 +162,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/reset-password'
-    | '/bootcamps'
     | '/dashboard'
     | '/students'
     | '/invite/$token'
@@ -170,6 +170,7 @@ export interface FileRouteTypes {
     | '/lessons/$id'
     | '/lessons/test-brain'
     | '/api/public/ask-question'
+    | '/bootcamps/'
     | '/lessons/'
     | '/api/public/hooks/reconcile-indexing'
   fileRoutesByTo: FileRoutesByTo
@@ -177,7 +178,6 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/reset-password'
-    | '/bootcamps'
     | '/dashboard'
     | '/students'
     | '/invite/$token'
@@ -186,6 +186,7 @@ export interface FileRouteTypes {
     | '/lessons/$id'
     | '/lessons/test-brain'
     | '/api/public/ask-question'
+    | '/bootcamps'
     | '/lessons'
     | '/api/public/hooks/reconcile-indexing'
   id:
@@ -194,7 +195,6 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/reset-password'
-    | '/_authenticated/bootcamps'
     | '/_authenticated/dashboard'
     | '/_authenticated/students'
     | '/invite/$token'
@@ -203,6 +203,7 @@ export interface FileRouteTypes {
     | '/_authenticated/lessons/$id'
     | '/_authenticated/lessons/test-brain'
     | '/api/public/ask-question'
+    | '/_authenticated/bootcamps/'
     | '/_authenticated/lessons/'
     | '/api/public/hooks/reconcile-indexing'
   fileRoutesById: FileRoutesById
@@ -268,18 +269,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/bootcamps': {
-      id: '/_authenticated/bootcamps'
-      path: '/bootcamps'
-      fullPath: '/bootcamps'
-      preLoaderRoute: typeof AuthenticatedBootcampsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/lessons/': {
       id: '/_authenticated/lessons/'
       path: '/lessons'
       fullPath: '/lessons/'
       preLoaderRoute: typeof AuthenticatedLessonsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/bootcamps/': {
+      id: '/_authenticated/bootcamps/'
+      path: '/bootcamps'
+      fullPath: '/bootcamps/'
+      preLoaderRoute: typeof AuthenticatedBootcampsIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/api/public/ask-question': {
@@ -305,10 +306,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/bootcamps/$id': {
       id: '/_authenticated/bootcamps/$id'
-      path: '/$id'
+      path: '/bootcamps/$id'
       fullPath: '/bootcamps/$id'
       preLoaderRoute: typeof AuthenticatedBootcampsIdRouteImport
-      parentRoute: typeof AuthenticatedBootcampsRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/password-requests': {
       id: '/_authenticated/admin/password-requests'
@@ -327,38 +328,26 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface AuthenticatedBootcampsRouteChildren {
-  AuthenticatedBootcampsIdRoute: typeof AuthenticatedBootcampsIdRoute
-}
-
-const AuthenticatedBootcampsRouteChildren: AuthenticatedBootcampsRouteChildren =
-  {
-    AuthenticatedBootcampsIdRoute: AuthenticatedBootcampsIdRoute,
-  }
-
-const AuthenticatedBootcampsRouteWithChildren =
-  AuthenticatedBootcampsRoute._addFileChildren(
-    AuthenticatedBootcampsRouteChildren,
-  )
-
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedBootcampsRoute: typeof AuthenticatedBootcampsRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRoute
   AuthenticatedAdminPasswordRequestsRoute: typeof AuthenticatedAdminPasswordRequestsRoute
+  AuthenticatedBootcampsIdRoute: typeof AuthenticatedBootcampsIdRoute
   AuthenticatedLessonsIdRoute: typeof AuthenticatedLessonsIdRoute
   AuthenticatedLessonsTestBrainRoute: typeof AuthenticatedLessonsTestBrainRoute
+  AuthenticatedBootcampsIndexRoute: typeof AuthenticatedBootcampsIndexRoute
   AuthenticatedLessonsIndexRoute: typeof AuthenticatedLessonsIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedBootcampsRoute: AuthenticatedBootcampsRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRoute,
   AuthenticatedAdminPasswordRequestsRoute:
     AuthenticatedAdminPasswordRequestsRoute,
+  AuthenticatedBootcampsIdRoute: AuthenticatedBootcampsIdRoute,
   AuthenticatedLessonsIdRoute: AuthenticatedLessonsIdRoute,
   AuthenticatedLessonsTestBrainRoute: AuthenticatedLessonsTestBrainRoute,
+  AuthenticatedBootcampsIndexRoute: AuthenticatedBootcampsIndexRoute,
   AuthenticatedLessonsIndexRoute: AuthenticatedLessonsIndexRoute,
 }
 
@@ -377,3 +366,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
