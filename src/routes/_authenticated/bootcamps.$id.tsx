@@ -31,6 +31,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { formatDate } from "@/lib/format";
+import { fetchBootcampMembersWithProfiles } from "@/lib/bootcamp-members";
 import { BootcampKnowledgeBaseCard } from "@/components/bootcamp-kb-card";
 import { TeachersCard } from "@/components/teachers-card";
 
@@ -70,15 +71,7 @@ function BootcampDetail() {
   const members = useQuery({
     queryKey: ["bootcamp-members", id],
     enabled: !!id,
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("bootcamp_members")
-        .select("id, user_id, role, profiles:profiles!bootcamp_members_user_id_fkey(email, first_name, last_name)")
-        .eq("bootcamp_id", id!)
-        .eq("role", "admin");
-      if (error) throw error;
-      return data ?? [];
-    },
+    queryFn: () => fetchBootcampMembersWithProfiles(id!, "admin"),
   });
 
   const update = useMutation({
