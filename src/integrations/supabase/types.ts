@@ -103,6 +103,8 @@ export type Database = {
           bootcamp_id: string
           created_at: string
           created_by: string | null
+          delivered_count: number
+          failed_count: number
           id: string
           message: string
           processed_at: string | null
@@ -110,12 +112,15 @@ export type Database = {
           status: Database["public"]["Enums"]["announcement_status"]
           title: string
           updated_at: string
+          webhook_payload: Json | null
         }
         Insert: {
           audience_type?: Database["public"]["Enums"]["announcement_audience"]
           bootcamp_id: string
           created_at?: string
           created_by?: string | null
+          delivered_count?: number
+          failed_count?: number
           id?: string
           message: string
           processed_at?: string | null
@@ -123,12 +128,15 @@ export type Database = {
           status?: Database["public"]["Enums"]["announcement_status"]
           title: string
           updated_at?: string
+          webhook_payload?: Json | null
         }
         Update: {
           audience_type?: Database["public"]["Enums"]["announcement_audience"]
           bootcamp_id?: string
           created_at?: string
           created_by?: string | null
+          delivered_count?: number
+          failed_count?: number
           id?: string
           message?: string
           processed_at?: string | null
@@ -136,6 +144,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["announcement_status"]
           title?: string
           updated_at?: string
+          webhook_payload?: Json | null
         }
         Relationships: [
           {
