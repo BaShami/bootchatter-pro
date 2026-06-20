@@ -24,7 +24,7 @@ type NavItem = {
   icon: typeof LayoutDashboard;
   disabled?: boolean;
 };
-const navItems: NavItem[] = [
+const adminNavItems: NavItem[] = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/bootcamps", label: "Bootcamps", icon: GraduationCap },
   { to: "/students", label: "Students", icon: Users },
@@ -36,11 +36,24 @@ const navItems: NavItem[] = [
   { to: "/settings", label: "Settings", icon: Settings, disabled: true },
 ];
 
+const teacherNavItems: NavItem[] = [
+  { to: "/dashboard", label: "My Bootcamps", icon: GraduationCap },
+  { to: "/lessons", label: "Lessons", icon: BookOpen },
+  { to: "/announcements", label: "Announcements", icon: Megaphone, disabled: true },
+  { to: "/questions", label: "Questions", icon: MessageSquare, disabled: true },
+];
+
 export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const user = useCurrentUser();
   const navigate = useNavigate();
   const { data: perms } = usePermissions();
+  const navItems = perms?.isTeacher ? teacherNavItems : adminNavItems;
+  const roleLabel = perms?.isPlatformAdmin
+    ? "Platform admin"
+    : perms?.isTeacher
+      ? "Teacher"
+      : "Bootcamp admin";
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -114,7 +127,7 @@ export function AppSidebar() {
           <div className="flex-1 min-w-0">
             <div className="text-sm font-medium truncate">{user?.email}</div>
             <div className="text-[11px] text-muted-foreground">
-              {perms?.isPlatformAdmin ? "Platform admin" : "Bootcamp admin"}
+              {roleLabel}
             </div>
           </div>
         </div>

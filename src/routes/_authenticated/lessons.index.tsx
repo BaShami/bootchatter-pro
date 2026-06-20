@@ -3,10 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus, Search, BookOpen } from "lucide-react";
+import { Plus, Search, BookOpen, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useBootcamps } from "@/hooks/use-bootcamps";
 import { useLessons } from "@/hooks/use-lessons";
+import { usePermissions } from "@/hooks/use-auth";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -46,8 +47,24 @@ const STATUS_STYLES: Record<string, string> = {
   archived: "bg-muted text-muted-foreground line-through",
 };
 
+const TEACHER_STATUS_LABEL: Record<string, string> = {
+  draft: "Draft",
+  processing: "Processing",
+  ready: "Processing",
+  failed: "Draft",
+  published: "Live",
+  archived: "Draft",
+};
+const TEACHER_STATUS_STYLES: Record<string, string> = {
+  Draft: "bg-muted text-muted-foreground",
+  Processing: "bg-primary/10 text-primary",
+  Live: "bg-emerald-100 text-emerald-800",
+};
+
 function LessonsPage() {
   const { data: bootcamps, isLoading: bootcampsLoading } = useBootcamps();
+  const { data: perms } = usePermissions();
+  const isTeacher = !!perms?.isTeacher;
   const [bootcampId, setBootcampId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -64,7 +81,7 @@ function LessonsPage() {
   const filtered = useMemo(
     () =>
       (lessons ?? []).filter((l) => {
-        if (statusFilter !== "all" && l.status !== statusFilter) return false;
+        if (!isTeacher && statusFilter !== "all" && l.status !== statusFilter) return false;
         if (!q) return true;
         const t = q.toLowerCase();
         return (
@@ -73,14 +90,18 @@ function LessonsPage() {
           (l.summary ?? "").toLowerCase().includes(t)
         );
       }),
-    [lessons, q, statusFilter],
+    [lessons, q, statusFilter, isTeacher],
   );
 
   return (
     <div>
       <PageHeader
         title="Lessons"
-        description="Upload transcripts, generate knowledge, and publish lessons for the AI assistant."
+        description={
+          isTeacher
+            ? "Upload transcripts for your bootcamp lessons."
+            : "Upload transcripts, generate knowledge, and publish lessons for the AI assistant."
+        }
         actions={
           bootcampId ? (
             <Dialog open={open} onOpenChange={setOpen}>
@@ -116,19 +137,21 @@ function LessonsPage() {
           </SelectContent>
         </Select>
 
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[160px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            <SelectItem value="draft">Draft</SelectItem>
-            <SelectItem value="processing">Processing</SelectItem>
-            <SelectItem value="ready">Ready</SelectItem>
-            <SelectItem value="published">Published</SelectItem>
-            <SelectItem value="archived">Archived</SelectItem>
-          </SelectContent>
-        </Select>
+        {!isTeacher && (
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-[160px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="draft">Draft</SelectItem>
+              <SelectItem value="processing">Processing</SelectItem>
+              <SelectItem value="ready">Ready</SelectItem>
+              <SelectItem value="published">Published</SelectItem>
+              <SelectItem value="archived">Archived</SelectItem>
+            </SelectContent>
+          </Select>
+        )}
 
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -142,7 +165,13 @@ function LessonsPage() {
       </div>
 
       {!bootcampId ? (
-        <EmptyState text="Create a bootcamp first to add lessons." />
+        <EmptyState
+          text={
+            isTeacher
+              ? "You haven't been assigned to a bootcamp yet."
+              : "Create a bootcamp first to add lessons."
+          }
+        />
       ) : isLoading ? (
         <div className="grid gap-3">
           {[0, 1, 2].map((i) => (
@@ -157,21 +186,24 @@ function LessonsPage() {
         <EmptyState text="No lessons yet. Create one to start building your AI knowledge base." />
       ) : (
         <div className="grid gap-3">
-          {filtered.map((l) => (
-            <Link
-              key={l.id}
-              to="/lessons/$id"
-              params={{ id: l.id }}
-              className="block group"
-            >
-              <Card className="transition-colors group-hover:border-primary/40">
+          {filtered.map((l) => {
+            const teacherLabel = TEACHER_STATUS_LABEL[l.status] ?? "Draft";
+            return (
+              <Card
+                key={l.id}
+                className="transition-colors hover:border-primary/40"
+              >
                 <CardContent className="p-4 flex items-start gap-4">
                   <div className="h-10 w-10 rounded-md bg-primary/10 text-primary grid place-items-center shrink-0">
                     <BookOpen className="h-5 w-5" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start gap-2 justify-between">
-                      <div className="min-w-0">
+                      <Link
+                        to="/lessons/$id"
+                        params={{ id: l.id }}
+                        className="min-w-0 hover:underline"
+                      >
                         <h3 className="font-medium truncate">
                           {l.lesson_number != null && (
                             <span className="text-muted-foreground mr-1.5">
@@ -183,32 +215,49 @@ function LessonsPage() {
                         {l.module_name ? (
                           <p className="text-xs text-muted-foreground">{l.module_name}</p>
                         ) : null}
-                      </div>
-                      <Badge variant="outline" className={STATUS_STYLES[l.status] ?? ""}>
-                        {l.status}
+                      </Link>
+                      <Badge
+                        variant="outline"
+                        className={
+                          isTeacher
+                            ? TEACHER_STATUS_STYLES[teacherLabel] ?? ""
+                            : STATUS_STYLES[l.status] ?? ""
+                        }
+                      >
+                        {isTeacher ? teacherLabel : l.status}
                       </Badge>
                     </div>
-                    {l.summary ? (
+                    {!isTeacher && l.summary ? (
                       <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                         {l.summary}
                       </p>
                     ) : null}
                     <div className="text-xs text-muted-foreground mt-2 flex flex-wrap gap-x-4 gap-y-0.5">
                       <span>Lesson date {formatDate(l.lesson_date)}</span>
-                      {l.published_at ? (
+                      {!isTeacher && l.published_at ? (
                         <span>Published {formatDate(l.published_at)}</span>
                       ) : null}
                     </div>
+                    {isTeacher && (
+                      <div className="mt-3">
+                        <Button asChild size="sm" variant="outline">
+                          <Link to="/lessons/$id" params={{ id: l.id }}>
+                            <Upload className="h-3.5 w-3.5 mr-1.5" /> Upload transcript
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
-            </Link>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
+
 
 function EmptyState({ text }: { text: string }) {
   return (
