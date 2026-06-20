@@ -47,18 +47,13 @@ const STATUS_STYLES: Record<string, string> = {
   archived: "bg-muted text-muted-foreground line-through",
 };
 
-const TEACHER_STATUS_LABEL: Record<string, string> = {
-  draft: "Draft",
-  processing: "Processing",
-  ready: "Processing",
-  failed: "Draft",
+const STATUS_LABELS: Record<string, string> = {
+  draft: "Not started",
+  processing: "Processing...",
+  ready: "Ready to publish",
   published: "Live",
-  archived: "Draft",
-};
-const TEACHER_STATUS_STYLES: Record<string, string> = {
-  Draft: "bg-muted text-muted-foreground",
-  Processing: "bg-primary/10 text-primary",
-  Live: "bg-emerald-100 text-emerald-800",
+  failed: "Upload failed — try again",
+  archived: "Archived",
 };
 
 function LessonsPage() {
@@ -186,13 +181,11 @@ function LessonsPage() {
         <EmptyState text="No lessons yet. Create one to start building your AI knowledge base." />
       ) : (
         <div className="grid gap-3">
-          {filtered.map((l) => {
-            const teacherLabel = TEACHER_STATUS_LABEL[l.status] ?? "Draft";
-            return (
-              <Card
-                key={l.id}
-                className="transition-colors hover:border-primary/40"
-              >
+          {filtered.map((l) => (
+            <Card
+              key={l.id}
+              className="transition-colors hover:border-primary/40"
+            >
                 <CardContent className="p-4 flex items-start gap-4">
                   <div className="h-10 w-10 rounded-md bg-primary/10 text-primary grid place-items-center shrink-0">
                     <BookOpen className="h-5 w-5" />
@@ -218,13 +211,9 @@ function LessonsPage() {
                       </Link>
                       <Badge
                         variant="outline"
-                        className={
-                          isTeacher
-                            ? TEACHER_STATUS_STYLES[teacherLabel] ?? ""
-                            : STATUS_STYLES[l.status] ?? ""
-                        }
+                        className={STATUS_STYLES[l.status] ?? ""}
                       >
-                        {isTeacher ? teacherLabel : l.status}
+                        {STATUS_LABELS[l.status] ?? l.status}
                       </Badge>
                     </div>
                     {!isTeacher && l.summary ? (
@@ -250,8 +239,7 @@ function LessonsPage() {
                   </div>
                 </CardContent>
               </Card>
-            );
-          })}
+          ))}
         </div>
       )}
     </div>

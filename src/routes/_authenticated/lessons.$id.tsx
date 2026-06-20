@@ -56,6 +56,15 @@ const STATUS_STYLES: Record<string, string> = {
   archived: "bg-muted text-muted-foreground line-through",
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  draft: "Not started",
+  processing: "Processing...",
+  ready: "Ready to publish",
+  published: "Live",
+  failed: "Upload failed — try again",
+  archived: "Archived",
+};
+
 function LessonDetail() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
@@ -195,7 +204,7 @@ function LessonDetail() {
         actions={
           <div className="flex items-center gap-2">
             <Badge variant="outline" className={STATUS_STYLES[lesson.status]}>
-              {lesson.status}
+              {STATUS_LABELS[lesson.status] ?? lesson.status}
             </Badge>
             {isPublished ? (
               <Button
@@ -381,7 +390,7 @@ function LessonDetail() {
               <div className="flex items-center justify-between text-sm">
                 <span>Status</span>
                 <Badge variant="outline" className={STATUS_STYLES[lesson.status]}>
-                  {lesson.status}
+                  {STATUS_LABELS[lesson.status] ?? lesson.status}
                 </Badge>
               </div>
               <div className="flex items-center justify-between text-sm">
