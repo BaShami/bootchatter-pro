@@ -83,8 +83,18 @@ function AuthPage() {
     if (!email) return toast.error("Enter your email above first");
     setResetting(true);
     try {
-      await submitReset({ data: { email } });
-      toast.success("If that email exists, a platform admin has been notified to reset your password.");
+      const res = await submitReset({ data: { email } });
+      if (res.isTeacher) {
+        toast.success(
+          "Your reset request has been sent to your administrator. They will provide you with a new password.",
+        );
+      } else {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        toast.success("If that email exists, a reset link has been sent.");
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not submit request");
     } finally {

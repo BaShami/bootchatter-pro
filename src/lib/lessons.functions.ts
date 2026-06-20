@@ -144,19 +144,26 @@ export const setLessonPublished = createServerFn({ method: "POST" })
 
     const { data: lesson, error } = await supabase
       .from("lessons")
-      .select("id, bootcamp_id, status")
+      .select("id, bootcamp_id, status, transcript")
       .eq("id", data.lesson_id)
       .maybeSingle();
     if (error) throw new Error(error.message);
     if (!lesson) throw new Error("Lesson not found");
 
-    const { data: isAdmin } = await supabase.rpc("is_bootcamp_admin", {
+    const { data: canWrite } = await supabase.rpc("is_bootcamp_teacher", {
       _user_id: userId,
       _bootcamp_id: lesson.bootcamp_id,
     });
-    if (!isAdmin) throw new Error("Forbidden");
+    if (!canWrite) throw new Error("Forbidden");
 
     if (data.publish) {
+      const transcriptLen = (lesson.transcript ?? "").trim().length;
+      if (transcriptLen < 100) {
+        throw new Error(
+          "Transcript is too short. Please paste the full lesson transcript before publishing.",
+        );
+      }
+
       const { count } = await supabase
         .from("lesson_chunks")
         .select("id", { count: "exact", head: true })

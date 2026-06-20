@@ -90,13 +90,9 @@ function InvitePage() {
           ) : invalid ? (
             <div className="space-y-3">
               <p className="text-sm">
-                {!invite
+                {!invite || invite.status === "revoked"
                   ? "This invite link is not valid."
-                  : invite.status === "accepted"
-                    ? "This invite has already been used."
-                    : invite.status === "revoked"
-                      ? "This invite has been revoked."
-                      : "This invite has expired. Ask the admin to send a new one."}
+                  : "This invite link has expired or already been used. Ask your administrator for a new one."}
               </p>
               <Button variant="outline" onClick={() => navigate({ to: "/auth" })}>
                 Go to sign in
