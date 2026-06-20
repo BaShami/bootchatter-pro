@@ -127,7 +127,7 @@ export function AppSidebar() {
           <div className="flex-1 min-w-0">
             <div className="text-sm font-medium truncate">{user?.email}</div>
             <div className="text-[11px] text-muted-foreground">
-              {perms?.isPlatformAdmin ? "Platform admin" : "Bootcamp admin"}
+              {roleLabel}
             </div>
           </div>
         </div>
