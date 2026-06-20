@@ -20,8 +20,7 @@ function ChecklistItem({ done, label, to, search }: ItemProps) {
       <Icon className={cn("h-4 w-4 shrink-0", done ? "text-emerald-600" : "text-muted-foreground")} />
       <Link
         to={to}
-        // @ts-expect-error — search varies per route
-        search={search}
+        search={search as never}
         className={cn(
           "hover:underline",
           done ? "text-muted-foreground line-through" : "text-foreground font-medium",
