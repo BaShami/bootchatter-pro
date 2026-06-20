@@ -33,7 +33,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { createAnnouncement, sendAnnouncement } from "@/lib/announcements.functions";
+import {
+  createAnnouncement,
+  getBootcampWebhook,
+  sendAnnouncement,
+} from "@/lib/announcements.functions";
 
 const searchSchema = z.object({
   bootcamp_id: z.string().uuid().optional(),
@@ -46,6 +50,7 @@ export const Route = createFileRoute("/_authenticated/announcements/new")({
 });
 
 const WHATSAPP_LIMIT = 1000;
+const WHATSAPP_SPLIT_WARN = 1500;
 
 function NewAnnouncementPage() {
   const navigate = useNavigate();
