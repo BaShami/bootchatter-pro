@@ -10,6 +10,7 @@ import {
   Settings,
   LogOut,
   Sparkles,
+  KeyRound,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, usePermissions } from "@/hooks/use-auth";
