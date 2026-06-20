@@ -30,7 +30,7 @@ const adminNavItems: NavItem[] = [
   { to: "/students", label: "Students", icon: Users },
   { to: "/lessons", label: "Lessons", icon: BookOpen },
   { to: "/lessons/test-brain", label: "Test AI brain", icon: Sparkles },
-  { to: "/announcements", label: "Announcements", icon: Megaphone, disabled: true },
+  { to: "/announcements", label: "Announcements", icon: Megaphone },
   { to: "/questions", label: "Questions", icon: MessageSquare, disabled: true },
   { to: "/analytics", label: "Analytics", icon: BarChart3, disabled: true },
   { to: "/settings", label: "Settings", icon: Settings, disabled: true },
@@ -39,7 +39,7 @@ const adminNavItems: NavItem[] = [
 const teacherNavItems: NavItem[] = [
   { to: "/dashboard", label: "My Bootcamps", icon: GraduationCap },
   { to: "/lessons", label: "Lessons", icon: BookOpen },
-  { to: "/announcements", label: "Announcements", icon: Megaphone, disabled: true },
+  { to: "/announcements", label: "Announcements", icon: Megaphone },
   { to: "/questions", label: "Questions", icon: MessageSquare, disabled: true },
 ];
 
