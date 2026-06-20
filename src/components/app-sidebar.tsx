@@ -12,6 +12,7 @@ import {
   Sparkles,
   KeyRound,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useCurrentUser, usePermissions } from "@/hooks/use-auth";
 import { initials } from "@/lib/format";
