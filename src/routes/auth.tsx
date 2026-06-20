@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Toaster } from "@/components/ui/sonner";
+import { requestPasswordReset } from "@/lib/password-reset.functions";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -75,16 +77,19 @@ function AuthPage() {
   }
 
   const [resetting, setResetting] = useState(false);
+  const submitReset = useServerFn(requestPasswordReset);
   async function handleReset() {
-    const email = (document.getElementById("signin-email") as HTMLInputElement | null)?.value;
+    const email = (document.getElementById("signin-email") as HTMLInputElement | null)?.value?.trim();
     if (!email) return toast.error("Enter your email above first");
     setResetting(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
-    });
-    setResetting(false);
-    if (error) return toast.error(error.message);
-    toast.success(`Password reset email sent to ${email}. Check your inbox (and spam folder).`);
+    try {
+      await submitReset({ data: { email } });
+      toast.success("If that email exists, a platform admin has been notified to reset your password.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not submit request");
+    } finally {
+      setResetting(false);
+    }
   }
 
   return (

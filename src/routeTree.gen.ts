@@ -13,6 +13,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as InviteTokenRouteImport } from './routes/invite.$token'
 import { Route as AuthenticatedStudentsRouteImport } from './routes/_authenticated/students'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedBootcampsRouteImport } from './routes/_authenticated/bootcamps'
@@ -21,6 +22,7 @@ import { Route as ApiPublicAskQuestionRouteImport } from './routes/api/public/as
 import { Route as AuthenticatedLessonsTestBrainRouteImport } from './routes/_authenticated/lessons.test-brain'
 import { Route as AuthenticatedLessonsIdRouteImport } from './routes/_authenticated/lessons.$id'
 import { Route as AuthenticatedBootcampsIdRouteImport } from './routes/_authenticated/bootcamps.$id'
+import { Route as AuthenticatedAdminPasswordRequestsRouteImport } from './routes/_authenticated/admin.password-requests'
 import { Route as ApiPublicHooksReconcileIndexingRouteImport } from './routes/api/public/hooks/reconcile-indexing'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -40,6 +42,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InviteTokenRoute = InviteTokenRouteImport.update({
+  id: '/invite/$token',
+  path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedStudentsRoute = AuthenticatedStudentsRouteImport.update({
@@ -85,6 +92,12 @@ const AuthenticatedBootcampsIdRoute =
     path: '/$id',
     getParentRoute: () => AuthenticatedBootcampsRoute,
   } as any)
+const AuthenticatedAdminPasswordRequestsRoute =
+  AuthenticatedAdminPasswordRequestsRouteImport.update({
+    id: '/admin/password-requests',
+    path: '/admin/password-requests',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const ApiPublicHooksReconcileIndexingRoute =
   ApiPublicHooksReconcileIndexingRouteImport.update({
     id: '/api/public/hooks/reconcile-indexing',
@@ -99,6 +112,8 @@ export interface FileRoutesByFullPath {
   '/bootcamps': typeof AuthenticatedBootcampsRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/students': typeof AuthenticatedStudentsRoute
+  '/invite/$token': typeof InviteTokenRoute
+  '/admin/password-requests': typeof AuthenticatedAdminPasswordRequestsRoute
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
@@ -113,6 +128,8 @@ export interface FileRoutesByTo {
   '/bootcamps': typeof AuthenticatedBootcampsRouteWithChildren
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/students': typeof AuthenticatedStudentsRoute
+  '/invite/$token': typeof InviteTokenRoute
+  '/admin/password-requests': typeof AuthenticatedAdminPasswordRequestsRoute
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
@@ -129,6 +146,8 @@ export interface FileRoutesById {
   '/_authenticated/bootcamps': typeof AuthenticatedBootcampsRouteWithChildren
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/students': typeof AuthenticatedStudentsRoute
+  '/invite/$token': typeof InviteTokenRoute
+  '/_authenticated/admin/password-requests': typeof AuthenticatedAdminPasswordRequestsRoute
   '/_authenticated/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
   '/_authenticated/lessons/$id': typeof AuthenticatedLessonsIdRoute
   '/_authenticated/lessons/test-brain': typeof AuthenticatedLessonsTestBrainRoute
@@ -145,6 +164,8 @@ export interface FileRouteTypes {
     | '/bootcamps'
     | '/dashboard'
     | '/students'
+    | '/invite/$token'
+    | '/admin/password-requests'
     | '/bootcamps/$id'
     | '/lessons/$id'
     | '/lessons/test-brain'
@@ -159,6 +180,8 @@ export interface FileRouteTypes {
     | '/bootcamps'
     | '/dashboard'
     | '/students'
+    | '/invite/$token'
+    | '/admin/password-requests'
     | '/bootcamps/$id'
     | '/lessons/$id'
     | '/lessons/test-brain'
@@ -174,6 +197,8 @@ export interface FileRouteTypes {
     | '/_authenticated/bootcamps'
     | '/_authenticated/dashboard'
     | '/_authenticated/students'
+    | '/invite/$token'
+    | '/_authenticated/admin/password-requests'
     | '/_authenticated/bootcamps/$id'
     | '/_authenticated/lessons/$id'
     | '/_authenticated/lessons/test-brain'
@@ -187,6 +212,7 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  InviteTokenRoute: typeof InviteTokenRoute
   ApiPublicAskQuestionRoute: typeof ApiPublicAskQuestionRoute
   ApiPublicHooksReconcileIndexingRoute: typeof ApiPublicHooksReconcileIndexingRoute
 }
@@ -219,6 +245,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/invite/$token': {
+      id: '/invite/$token'
+      path: '/invite/$token'
+      fullPath: '/invite/$token'
+      preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/students': {
@@ -277,6 +310,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedBootcampsIdRouteImport
       parentRoute: typeof AuthenticatedBootcampsRoute
     }
+    '/_authenticated/admin/password-requests': {
+      id: '/_authenticated/admin/password-requests'
+      path: '/admin/password-requests'
+      fullPath: '/admin/password-requests'
+      preLoaderRoute: typeof AuthenticatedAdminPasswordRequestsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/public/hooks/reconcile-indexing': {
       id: '/api/public/hooks/reconcile-indexing'
       path: '/api/public/hooks/reconcile-indexing'
@@ -305,6 +345,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBootcampsRoute: typeof AuthenticatedBootcampsRouteWithChildren
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRoute
+  AuthenticatedAdminPasswordRequestsRoute: typeof AuthenticatedAdminPasswordRequestsRoute
   AuthenticatedLessonsIdRoute: typeof AuthenticatedLessonsIdRoute
   AuthenticatedLessonsTestBrainRoute: typeof AuthenticatedLessonsTestBrainRoute
   AuthenticatedLessonsIndexRoute: typeof AuthenticatedLessonsIndexRoute
@@ -314,6 +355,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBootcampsRoute: AuthenticatedBootcampsRouteWithChildren,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedStudentsRoute: AuthenticatedStudentsRoute,
+  AuthenticatedAdminPasswordRequestsRoute:
+    AuthenticatedAdminPasswordRequestsRoute,
   AuthenticatedLessonsIdRoute: AuthenticatedLessonsIdRoute,
   AuthenticatedLessonsTestBrainRoute: AuthenticatedLessonsTestBrainRoute,
   AuthenticatedLessonsIndexRoute: AuthenticatedLessonsIndexRoute,
@@ -327,19 +370,10 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  InviteTokenRoute: InviteTokenRoute,
   ApiPublicAskQuestionRoute: ApiPublicAskQuestionRoute,
   ApiPublicHooksReconcileIndexingRoute: ApiPublicHooksReconcileIndexingRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
