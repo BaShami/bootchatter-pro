@@ -185,7 +185,8 @@ function LessonsPage() {
           ))}
         </div>
       ) : filtered.length === 0 ? (
-        <EmptyState text="No lessons yet. Create one to start building your AI knowledge base." />
+        <EmptyState text="No lessons yet. Upload a transcript to get started." />
+
       ) : (
         <div className="grid gap-3">
           {filtered.map((l) => {
