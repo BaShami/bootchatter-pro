@@ -121,7 +121,8 @@ export const acceptInvite = createServerFn({ method: "POST" })
     }
 
     const inviteEmail = inviteRow.email.trim().toLowerCase();
-    const teacherRole = inviteRow.role === "teacher" ? "teacher" : inviteRow.role;
+    const teacherRole: "teacher" | "admin" =
+      inviteRow.role === "admin" ? "admin" : "teacher";
     const bootcampIds = Array.isArray(inviteRow.bootcamp_ids)
       ? inviteRow.bootcamp_ids
       : [];
