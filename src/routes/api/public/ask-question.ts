@@ -17,6 +17,33 @@ function json(status: number, body: unknown) {
   });
 }
 
+// Simple in-memory sliding-window rate limit (single-instance deployment).
+// Key: phone_number. Limit: 10 requests / 60 seconds.
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const rateLimitBuckets = new Map<string, number[]>();
+function checkRateLimit(key: string): { ok: boolean; retryAfterSec: number } {
+  const now = Date.now();
+  const cutoff = now - RATE_LIMIT_WINDOW_MS;
+  const arr = (rateLimitBuckets.get(key) ?? []).filter((t) => t > cutoff);
+  if (arr.length >= RATE_LIMIT_MAX) {
+    const retry = Math.max(1, Math.ceil((arr[0] + RATE_LIMIT_WINDOW_MS - now) / 1000));
+    rateLimitBuckets.set(key, arr);
+    return { ok: false, retryAfterSec: retry };
+  }
+  arr.push(now);
+  rateLimitBuckets.set(key, arr);
+  // Opportunistic cleanup to keep the map small.
+  if (rateLimitBuckets.size > 5000) {
+    for (const [k, v] of rateLimitBuckets) {
+      const kept = v.filter((t) => t > cutoff);
+      if (kept.length === 0) rateLimitBuckets.delete(k);
+      else rateLimitBuckets.set(k, kept);
+    }
+  }
+  return { ok: true, retryAfterSec: 0 };
+}
+
 export const Route = createFileRoute("/api/public/ask-question")({
   server: {
     handlers: {
