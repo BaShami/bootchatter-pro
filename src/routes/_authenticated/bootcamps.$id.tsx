@@ -253,6 +253,9 @@ function BootcampDetail() {
         <div className="lg:col-span-1">
           <BootcampKnowledgeBaseCard bootcampId={id!} />
         </div>
+        <div className="lg:col-span-1">
+          <MakeWebhookCard bootcampId={id!} />
+        </div>
       </div>
     </div>
   );
