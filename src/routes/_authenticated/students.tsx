@@ -63,6 +63,16 @@ const addSchema = z.object({
   consent_status: z.enum(["pending", "granted", "revoked"]),
 });
 
+const editSchema = z.object({
+  first_name: z.string().trim().min(1, "First name required").max(80),
+  last_name: z.string().trim().max(80).optional().or(z.literal("")),
+  email: z.string().trim().email().max(255).optional().or(z.literal("")),
+  phone_number: z.string().trim().regex(E164, "Use E.164 format e.g. +27820000000").max(20),
+  enrollment_status: z.enum(["invited", "active", "suspended", "completed", "removed"]),
+  consent_status: z.enum(["pending", "granted", "revoked"]),
+  notes: z.string().trim().max(2000).optional().or(z.literal("")),
+});
+
 type Student = {
   id: string;
   bootcamp_id: string;
@@ -75,6 +85,7 @@ type Student = {
   enrolled_at: string | null;
   last_active_at: string | null;
   created_at: string;
+  notes: string | null;
 };
 
 const STATUS_STYLES: Record<Student["enrollment_status"], string> = {
@@ -227,6 +238,7 @@ function StudentsPage() {
 
 function StudentActions({ student }: { student: Student }) {
   const qc = useQueryClient();
+  const [editOpen, setEditOpen] = useState(false);
   const update = useMutation({
     mutationFn: async (status: Student["enrollment_status"]) => {
       const { error } = await supabase
@@ -262,6 +274,7 @@ function StudentActions({ student }: { student: Student }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
+        <EditStudentDialog student={student} />
         <DropdownMenuItem onClick={() => update.mutate("active")}>Mark active</DropdownMenuItem>
         <DropdownMenuItem onClick={() => update.mutate("suspended")}>Suspend</DropdownMenuItem>
         <DropdownMenuItem onClick={() => update.mutate("completed")}>Mark completed</DropdownMenuItem>
@@ -278,6 +291,140 @@ function StudentActions({ student }: { student: Student }) {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+  );
+}
+
+function EditStudentDialog({ student }: { student: Student }) {
+  const [open, setOpen] = useState(false);
+  const qc = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: async (input: z.infer<typeof editSchema>) => {
+      const { error } = await supabase
+        .from("students")
+        .update({
+          first_name: input.first_name,
+          last_name: input.last_name || null,
+          email: input.email || null,
+          phone_number: input.phone_number,
+          enrollment_status: input.enrollment_status,
+          consent_status: input.consent_status,
+          notes: input.notes || null,
+        })
+        .eq("id", student.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Student updated");
+      qc.invalidateQueries({ queryKey: ["students"] });
+      setOpen(false);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const form = Object.fromEntries(new FormData(e.currentTarget));
+    const parsed = editSchema.safeParse(form);
+    if (!parsed.success) return toast.error(parsed.error.issues[0].message);
+    mutation.mutate(parsed.data);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={() => setOpen(true)}>
+        Edit student
+      </DropdownMenuItem>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit student</DialogTitle>
+          <DialogDescription>Update student details and enrollment status.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={onSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor={`edit-first-${student.id}`}>First name</Label>
+              <Input
+                id={`edit-first-${student.id}`}
+                name="first_name"
+                required
+                maxLength={80}
+                defaultValue={student.first_name}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor={`edit-last-${student.id}`}>Last name</Label>
+              <Input
+                id={`edit-last-${student.id}`}
+                name="last_name"
+                maxLength={80}
+                defaultValue={student.last_name ?? ""}
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor={`edit-email-${student.id}`}>Email</Label>
+            <Input
+              id={`edit-email-${student.id}`}
+              name="email"
+              type="email"
+              maxLength={255}
+              defaultValue={student.email ?? ""}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor={`edit-phone-${student.id}`}>Phone number (E.164)</Label>
+            <Input
+              id={`edit-phone-${student.id}`}
+              name="phone_number"
+              required
+              maxLength={20}
+              defaultValue={student.phone_number}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor={`edit-enrollment-${student.id}`}>Enrollment status</Label>
+              <Select name="enrollment_status" defaultValue={student.enrollment_status}>
+                <SelectTrigger id={`edit-enrollment-${student.id}`}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="invited">Invited</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="suspended">Suspended</SelectItem>
+                  <SelectItem value="completed">Completed</SelectItem>
+                  <SelectItem value="removed">Removed</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor={`edit-consent-${student.id}`}>Consent</Label>
+              <Select name="consent_status" defaultValue={student.consent_status}>
+                <SelectTrigger id={`edit-consent-${student.id}`}><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="granted">Granted</SelectItem>
+                  <SelectItem value="revoked">Revoked</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor={`edit-notes-${student.id}`}>Notes</Label>
+            <Textarea
+              id={`edit-notes-${student.id}`}
+              name="notes"
+              rows={2}
+              maxLength={2000}
+              defaultValue={student.notes ?? ""}
+            />
+          </div>
+          <DialogFooter>
+            <Button type="submit" disabled={mutation.isPending}>
+              {mutation.isPending ? "Saving…" : "Save changes"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
