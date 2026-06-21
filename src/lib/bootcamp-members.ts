@@ -11,6 +11,7 @@ export type BootcampMemberWithProfile = {
   id: string;
   user_id: string;
   role: Database["public"]["Enums"]["bootcamp_role"];
+  status?: string;
   profiles: BootcampMemberProfile | null;
 };
 
@@ -18,14 +19,18 @@ export type BootcampMemberWithProfile = {
 export async function fetchBootcampMembersWithProfiles(
   bootcampId: string,
   role?: Database["public"]["Enums"]["bootcamp_role"],
+  memberStatus?: "active" | "suspended",
 ): Promise<BootcampMemberWithProfile[]> {
   let membersQuery = supabase
     .from("bootcamp_members")
-    .select("id, user_id, role")
+    .select("id, user_id, role, status")
     .eq("bootcamp_id", bootcampId);
 
   if (role) {
     membersQuery = membersQuery.eq("role", role);
+  }
+  if (memberStatus) {
+    membersQuery = membersQuery.eq("status", memberStatus);
   }
 
   const { data: members, error: membersError } = await membersQuery;
@@ -48,6 +53,7 @@ export async function fetchBootcampMembersWithProfiles(
     id: m.id,
     user_id: m.user_id,
     role: m.role,
+    status: (m as { status?: string }).status,
     profiles: profileById.get(m.user_id) ?? null,
   }));
 }

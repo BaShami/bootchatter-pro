@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { UserPlus, Copy, X, Clock } from "lucide-react";
+import { UserPlus, Copy, X, Clock, ChevronDown, Ban, UserMinus } from "lucide-react";
 import { useBootcamps } from "@/hooks/use-bootcamps";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,11 +21,21 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   createTeacherInvite,
   listBootcampInvites,
   revokeInvite,
 } from "@/lib/invites.functions";
 import { fetchBootcampMembersWithProfiles } from "@/lib/bootcamp-members";
+import {
+  listTeacherHistory,
+  removeTeacher,
+  suspendTeacher,
+} from "@/lib/teachers.functions";
 
 type Profile = { email?: string; first_name?: string; last_name?: string } | null;
 
@@ -34,7 +44,7 @@ export function TeachersCard({ bootcampId }: { bootcampId: string }) {
     queryKey: ["bootcamp-teachers", bootcampId],
     queryFn: async () => {
       try {
-        return await fetchBootcampMembersWithProfiles(bootcampId, "teacher");
+        return await fetchBootcampMembersWithProfiles(bootcampId, "teacher", "active");
       } catch (error) {
         console.error("[TeachersCard] failed to load active teachers:", error);
         throw error;
@@ -46,6 +56,12 @@ export function TeachersCard({ bootcampId }: { bootcampId: string }) {
   const invites = useQuery({
     queryKey: ["bootcamp-invites", bootcampId],
     queryFn: () => listFn({ data: { bootcamp_id: bootcampId } }),
+  });
+
+  const historyFn = useServerFn(listTeacherHistory);
+  const history = useQuery({
+    queryKey: ["teacher-history", bootcampId],
+    queryFn: () => historyFn({ data: { bootcamp_id: bootcampId } }),
   });
 
   return (
@@ -71,20 +87,45 @@ export function TeachersCard({ bootcampId }: { bootcampId: string }) {
               {teachers.data?.map((m) => {
                 const p = m.profiles as Profile;
                 return (
-                  <li key={m.id} className="flex items-center justify-between text-sm">
-                    <div>
-                      <div className="font-medium">
-                        {p?.first_name ?? ""} {p?.last_name ?? ""}
-                      </div>
-                      <div className="text-xs text-muted-foreground">{p?.email ?? m.user_id}</div>
-                    </div>
-                    <Badge variant="outline">teacher</Badge>
-                  </li>
+                  <TeacherRow key={m.id} member={m} profile={p} bootcampId={bootcampId} />
                 );
               })}
             </ul>
           )}
         </div>
+
+        <Collapsible>
+          <CollapsibleTrigger className="flex items-center gap-1 text-xs uppercase tracking-wider text-muted-foreground hover:text-foreground">
+            <ChevronDown className="h-3.5 w-3.5" />
+            History
+          </CollapsibleTrigger>
+          <CollapsibleContent className="mt-2">
+            {history.isLoading ? (
+              <Skeleton className="h-12 w-full" />
+            ) : !history.data?.history.length ? (
+              <p className="text-sm text-muted-foreground">No suspended or removed teachers.</p>
+            ) : (
+              <ul className="space-y-2">
+                {history.data.history.map((h) => (
+                  <li key={h.id} className="flex items-center justify-between text-sm">
+                    <div>
+                      <div className="font-medium">
+                        {h.first_name ?? ""} {h.last_name ?? ""}
+                      </div>
+                      <div className="text-xs text-muted-foreground">{h.email ?? "—"}</div>
+                    </div>
+                    <div className="text-xs text-muted-foreground text-right">
+                      <Badge variant="outline" className="capitalize">{h.action}</Badge>
+                      <div className="mt-0.5">
+                        {new Date(h.actioned_at).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
 
         <div>
           <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
@@ -104,6 +145,75 @@ export function TeachersCard({ bootcampId }: { bootcampId: string }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function TeacherRow({
+  member,
+  profile,
+  bootcampId,
+}: {
+  member: { id: string; user_id: string };
+  profile: Profile;
+  bootcampId: string;
+}) {
+  const qc = useQueryClient();
+  const suspendFn = useServerFn(suspendTeacher);
+  const removeFn = useServerFn(removeTeacher);
+
+  const suspendMut = useMutation({
+    mutationFn: () => suspendFn({ data: { bootcamp_id: bootcampId, member_id: member.id } }),
+    onSuccess: () => {
+      toast.success("Teacher suspended");
+      qc.invalidateQueries({ queryKey: ["bootcamp-teachers", bootcampId] });
+      qc.invalidateQueries({ queryKey: ["teacher-history", bootcampId] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const removeMut = useMutation({
+    mutationFn: () => removeFn({ data: { bootcamp_id: bootcampId, member_id: member.id } }),
+    onSuccess: () => {
+      toast.success("Teacher removed");
+      qc.invalidateQueries({ queryKey: ["bootcamp-teachers", bootcampId] });
+      qc.invalidateQueries({ queryKey: ["teacher-history", bootcampId] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <li className="flex items-center justify-between gap-2 text-sm">
+      <div className="min-w-0">
+        <div className="font-medium">
+          {profile?.first_name ?? ""} {profile?.last_name ?? ""}
+        </div>
+        <div className="text-xs text-muted-foreground truncate">
+          {profile?.email ?? member.user_id}
+        </div>
+      </div>
+      <div className="flex items-center gap-1 shrink-0">
+        <Button
+          size="sm"
+          variant="ghost"
+          title="Suspend"
+          disabled={suspendMut.isPending}
+          onClick={() => suspendMut.mutate()}
+        >
+          <Ban className="h-3.5 w-3.5" />
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          title="Remove"
+          disabled={removeMut.isPending}
+          onClick={() => {
+            if (confirm("Remove this teacher from the bootcamp?")) removeMut.mutate();
+          }}
+        >
+          <UserMinus className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </li>
   );
 }
 

@@ -162,6 +162,7 @@ export type Database = {
           created_at: string
           id: string
           role: Database["public"]["Enums"]["bootcamp_role"]
+          status: string
           user_id: string
         }
         Insert: {
@@ -169,6 +170,7 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["bootcamp_role"]
+          status?: string
           user_id: string
         }
         Update: {
@@ -176,6 +178,7 @@ export type Database = {
           created_at?: string
           id?: string
           role?: Database["public"]["Enums"]["bootcamp_role"]
+          status?: string
           user_id?: string
         }
         Relationships: [
@@ -674,6 +677,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      teacher_history: {
+        Row: {
+          action: string
+          actioned_at: string
+          actioned_by: string | null
+          bootcamp_id: string
+          email: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          role: Database["public"]["Enums"]["bootcamp_role"]
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          actioned_at?: string
+          actioned_by?: string | null
+          bootcamp_id: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          role: Database["public"]["Enums"]["bootcamp_role"]
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          actioned_at?: string
+          actioned_by?: string | null
+          bootcamp_id?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          role?: Database["public"]["Enums"]["bootcamp_role"]
+          user_id?: string | null
+        }
+        Relationships: []
       }
       students: {
         Row: {
