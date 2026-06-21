@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Plus, Search, MoreHorizontal, Upload, Download } from "lucide-react";
@@ -48,6 +49,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatDate, formatRelative } from "@/lib/format";
 import { csvFilename, downloadCsv, parseCsv, toCsv } from "@/lib/csv";
+import { triggerStudentOnboarding } from "@/lib/student-onboarding.functions";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
@@ -632,24 +634,33 @@ function ImportCsvDialog({
   const [bootcampId, setBootcampId] = useState(defaultBootcampId);
   const [preview, setPreview] = useState<CsvPreviewRow[]>([]);
   const qc = useQueryClient();
+  const triggerOnboarding = useServerFn(triggerStudentOnboarding);
 
   const importMut = useMutation({
     mutationFn: async (rows: CsvPreviewRow[]) => {
       let ok = 0;
       let fail = 0;
       for (const row of rows) {
-        const { error } = await supabase.from("students").insert({
-          bootcamp_id: bootcampId,
-          first_name: row.first_name,
-          last_name: row.last_name || null,
-          email: row.email || null,
-          phone_number: row.phone_number,
-          consent_status: row.consent_status,
-          enrollment_status: "active",
-          enrolled_at: new Date().toISOString(),
-        });
-        if (error) fail++;
-        else ok++;
+        const { data: inserted, error } = await supabase
+          .from("students")
+          .insert({
+            bootcamp_id: bootcampId,
+            first_name: row.first_name,
+            last_name: row.last_name || null,
+            email: row.email || null,
+            phone_number: row.phone_number,
+            consent_status: row.consent_status,
+            enrollment_status: "active",
+            enrolled_at: new Date().toISOString(),
+          })
+          .select("id")
+          .single();
+        if (error) {
+          fail++;
+        } else {
+          ok++;
+          void triggerOnboarding({ data: { student_id: inserted.id } });
+        }
       }
       return { ok, fail };
     },
@@ -762,20 +773,26 @@ function ImportCsvDialog({
 function AddStudentDialog({ bootcamps }: { bootcamps: { id: string; name: string }[] }) {
   const [open, setOpen] = useState(false);
   const qc = useQueryClient();
+  const triggerOnboarding = useServerFn(triggerStudentOnboarding);
   const mutation = useMutation({
     mutationFn: async (input: z.infer<typeof addSchema>) => {
-      const { error } = await supabase.from("students").insert({
-        bootcamp_id: input.bootcamp_id,
-        first_name: input.first_name,
-        last_name: input.last_name || null,
-        email: input.email || null,
-        phone_number: input.phone_number,
-        notes: input.notes || null,
-        consent_status: input.consent_status,
-        enrollment_status: "active",
-        enrolled_at: new Date().toISOString(),
-      });
+      const { data, error } = await supabase
+        .from("students")
+        .insert({
+          bootcamp_id: input.bootcamp_id,
+          first_name: input.first_name,
+          last_name: input.last_name || null,
+          email: input.email || null,
+          phone_number: input.phone_number,
+          notes: input.notes || null,
+          consent_status: input.consent_status,
+          enrollment_status: "active",
+          enrolled_at: new Date().toISOString(),
+        })
+        .select("id")
+        .single();
       if (error) throw error;
+      void triggerOnboarding({ data: { student_id: data.id } });
     },
     onSuccess: () => {
       toast.success("Student added");

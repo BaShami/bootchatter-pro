@@ -11,15 +11,17 @@ type ItemProps = {
   label: string;
   to: string;
   search?: Record<string, string>;
+  params?: Record<string, string>;
 };
 
-function ChecklistItem({ done, label, to, search }: ItemProps) {
+function ChecklistItem({ done, label, to, search, params }: ItemProps) {
   const Icon = done ? CheckCircle2 : Circle;
   return (
     <li className="flex items-center gap-2.5 text-sm">
       <Icon className={cn("h-4 w-4 shrink-0", done ? "text-emerald-600" : "text-muted-foreground")} />
       <Link
         to={to}
+        params={params as never}
         search={search as never}
         className={cn(
           "hover:underline",
@@ -48,7 +50,7 @@ export function BootcampOnboardingChecklist({ bootcampId }: { bootcampId: string
           .eq("status", "published"),
         supabase
           .from("bootcamp_settings")
-          .select("make_webhook_url")
+          .select("make_webhook_url, student_onboarding_webhook_url")
           .eq("bootcamp_id", bootcampId)
           .maybeSingle(),
         supabase
@@ -59,7 +61,8 @@ export function BootcampOnboardingChecklist({ bootcampId }: { bootcampId: string
       return {
         hasStudent: (students.count ?? 0) > 0,
         hasPublishedLesson: (publishedLessons.count ?? 0) > 0,
-        hasWebhook: !!settings.data?.make_webhook_url,
+        hasWebhook: !!settings.data?.make_webhook_url?.trim(),
+        hasStudentOnboardingWebhook: !!settings.data?.student_onboarding_webhook_url?.trim(),
         hasAnnouncement: (announcements.count ?? 0) > 0,
       };
     },
@@ -69,7 +72,11 @@ export function BootcampOnboardingChecklist({ bootcampId }: { bootcampId: string
   if (!data) return null;
 
   const allDone =
-    data.hasStudent && data.hasPublishedLesson && data.hasWebhook && data.hasAnnouncement;
+    data.hasStudent &&
+    data.hasPublishedLesson &&
+    data.hasWebhook &&
+    data.hasStudentOnboardingWebhook &&
+    data.hasAnnouncement;
   // Hide checklist only once the bootcamp has students AND a published lesson (per spec).
   if (data.hasStudent && data.hasPublishedLesson && allDone) return null;
   if (data.hasStudent && data.hasPublishedLesson) return null;
@@ -92,6 +99,13 @@ export function BootcampOnboardingChecklist({ bootcampId }: { bootcampId: string
             done={data.hasWebhook}
             label="Configure Make webhook URL"
             to="/bootcamps/$id"
+            params={{ id: bootcampId }}
+          />
+          <ChecklistItem
+            done={data.hasStudentOnboardingWebhook}
+            label="Configure student onboarding webhook URL"
+            to="/bootcamps/$id"
+            params={{ id: bootcampId }}
           />
           <ChecklistItem
             done={data.hasAnnouncement}

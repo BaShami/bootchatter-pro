@@ -203,6 +203,7 @@ export type Database = {
           full_text_result_limit: number
           id: string
           make_webhook_url: string | null
+          student_onboarding_webhook_url: string | null
           max_answer_length: number | null
           minimum_similarity: number | null
           openai_vector_store_id: string | null
@@ -221,6 +222,7 @@ export type Database = {
           full_text_result_limit?: number
           id?: string
           make_webhook_url?: string | null
+          student_onboarding_webhook_url?: string | null
           max_answer_length?: number | null
           minimum_similarity?: number | null
           openai_vector_store_id?: string | null
@@ -239,6 +241,7 @@ export type Database = {
           full_text_result_limit?: number
           id?: string
           make_webhook_url?: string | null
+          student_onboarding_webhook_url?: string | null
           max_answer_length?: number | null
           minimum_similarity?: number | null
           openai_vector_store_id?: string | null

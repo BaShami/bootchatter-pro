@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -34,7 +34,6 @@ import { formatDate } from "@/lib/format";
 import { fetchBootcampMembersWithProfiles } from "@/lib/bootcamp-members";
 import { BootcampKnowledgeBaseCard } from "@/components/bootcamp-kb-card";
 import { TeachersCard } from "@/components/teachers-card";
-import { MakeWebhookCard } from "@/components/make-webhook-card";
 import { BootcampOnboardingChecklist } from "@/components/bootcamp-onboarding-checklist";
 
 export const Route = createFileRoute("/_authenticated/bootcamps/$id")({
@@ -49,6 +48,8 @@ const updateSchema = z.object({
   end_date: z.string().optional().or(z.literal("")),
   timezone: z.string().trim().min(1).max(80),
   status: z.enum(["draft", "active", "completed", "archived"]),
+  make_webhook_url: z.string().trim().max(2000).optional().or(z.literal("")),
+  student_onboarding_webhook_url: z.string().trim().max(2000).optional().or(z.literal("")),
 });
 
 function BootcampDetail() {
@@ -56,6 +57,30 @@ function BootcampDetail() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: bootcamp, isLoading, isError, error, refetch } = useBootcamp(id);
+
+  const settings = useQuery({
+    queryKey: ["bootcamp-settings", id],
+    enabled: !!id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("bootcamp_settings")
+        .select("make_webhook_url, student_onboarding_webhook_url")
+        .eq("bootcamp_id", id!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const [makeWebhookUrl, setMakeWebhookUrl] = useState("");
+  const [studentOnboardingWebhookUrl, setStudentOnboardingWebhookUrl] = useState("");
+
+  useEffect(() => {
+    if (settings.data) {
+      setMakeWebhookUrl(settings.data.make_webhook_url ?? "");
+      setStudentOnboardingWebhookUrl(settings.data.student_onboarding_webhook_url ?? "");
+    }
+  }, [settings.data]);
 
   const studentCount = useQuery({
     queryKey: ["bootcamp-counts", id],
@@ -90,11 +115,23 @@ function BootcampDetail() {
         })
         .eq("id", id!);
       if (error) throw error;
+
+      const { error: settingsError } = await supabase
+        .from("bootcamp_settings")
+        .update({
+          make_webhook_url: input.make_webhook_url?.trim() || null,
+          student_onboarding_webhook_url: input.student_onboarding_webhook_url?.trim() || null,
+        })
+        .eq("bootcamp_id", id!);
+      if (settingsError) throw settingsError;
     },
     onSuccess: () => {
       toast.success("Bootcamp saved");
       qc.invalidateQueries({ queryKey: ["bootcamps"] });
       qc.invalidateQueries({ queryKey: ["bootcamps", id] });
+      qc.invalidateQueries({ queryKey: ["bootcamp-settings", id] });
+      qc.invalidateQueries({ queryKey: ["bootcamp-onboarding", id] });
+      qc.invalidateQueries({ queryKey: ["bootcamp-webhook", id] });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -102,7 +139,11 @@ function BootcampDetail() {
   function onSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = Object.fromEntries(new FormData(e.currentTarget));
-    const parsed = updateSchema.safeParse(form);
+    const parsed = updateSchema.safeParse({
+      ...form,
+      make_webhook_url: makeWebhookUrl,
+      student_onboarding_webhook_url: studentOnboardingWebhookUrl,
+    });
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
     update.mutate(parsed.data);
   }
@@ -212,6 +253,33 @@ function BootcampDetail() {
                   </Select>
                 </div>
               </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="make_webhook_url">Make webhook URL</Label>
+                <Input
+                  id="make_webhook_url"
+                  type="url"
+                  placeholder="https://hook.eu1.make.com/…"
+                  value={makeWebhookUrl}
+                  onChange={(e) => setMakeWebhookUrl(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Announcements POST one JSON payload per recipient to this URL.
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="student_onboarding_webhook_url">Student onboarding webhook URL</Label>
+                <Input
+                  id="student_onboarding_webhook_url"
+                  type="url"
+                  placeholder="https://hook.eu1.make.com/…"
+                  value={studentOnboardingWebhookUrl}
+                  onChange={(e) => setStudentOnboardingWebhookUrl(e.target.value)}
+                />
+                <p className="text-xs text-muted-foreground">
+                  When a new student is added, this URL receives their details and WhatsApp template
+                  variables. Leave empty to skip.
+                </p>
+              </div>
               <div className="flex justify-end">
                 <Button type="submit" disabled={update.isPending}>
                   <Save className="h-4 w-4 mr-1.5" />
@@ -258,9 +326,6 @@ function BootcampDetail() {
         </div>
         <div className="lg:col-span-1">
           <BootcampKnowledgeBaseCard bootcampId={id!} />
-        </div>
-        <div className="lg:col-span-1">
-          <MakeWebhookCard bootcampId={id!} />
         </div>
       </div>
     </div>
