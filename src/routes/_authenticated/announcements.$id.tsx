@@ -37,7 +37,8 @@ function AnnouncementDetailPage() {
   });
 
   const send = useMutation({
-    mutationFn: () => sendFn({ data: { id } }),
+    mutationFn: (opts?: { onlyFailed?: boolean }) =>
+      sendFn({ data: { id, only_failed: opts?.onlyFailed ?? false } }),
     onSuccess: (r) => {
       toast.success(`Sent to ${r.delivered}${r.failed ? `, ${r.failed} failed` : ""}`);
       qc.invalidateQueries({ queryKey: ["announcement", id] });
@@ -75,14 +76,25 @@ function AnnouncementDetailPage() {
         title={ann.title}
         description={`Created ${formatDate(ann.created_at)}${ann.processed_at ? ` · sent ${formatDate(ann.processed_at)}` : ""}`}
         actions={
-          ann.status !== "completed" ? (
-            <Button onClick={() => send.mutate()} disabled={send.isPending}>
-              <Send className="h-4 w-4 mr-1.5" />
-              {send.isPending ? "Sending…" : "Send now"}
-            </Button>
-          ) : (
-            <Badge>completed</Badge>
-          )
+          <div className="flex items-center gap-2">
+            {failed > 0 && ann.status === "completed" ? (
+              <Button
+                variant="outline"
+                onClick={() => send.mutate({ onlyFailed: true })}
+                disabled={send.isPending}
+              >
+                Resend failed ({failed})
+              </Button>
+            ) : null}
+            {ann.status !== "completed" ? (
+              <Button onClick={() => send.mutate({ onlyFailed: false })} disabled={send.isPending}>
+                <Send className="h-4 w-4 mr-1.5" />
+                {send.isPending ? "Sending…" : "Send now"}
+              </Button>
+            ) : failed === 0 ? (
+              <Badge>completed</Badge>
+            ) : null}
+          </div>
         }
       />
 

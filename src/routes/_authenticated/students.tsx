@@ -267,15 +267,16 @@ function StudentActions({ student }: { student: Student }) {
   });
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button size="icon" variant="ghost" className="h-8 w-8">
-          <MoreHorizontal className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <EditStudentDialog student={student} />
-        <DropdownMenuItem onClick={() => update.mutate("active")}>Mark active</DropdownMenuItem>
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button size="icon" variant="ghost" className="h-8 w-8">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuItem onClick={() => setEditOpen(true)}>Edit student</DropdownMenuItem>
+          <DropdownMenuItem onClick={() => update.mutate("active")}>Mark active</DropdownMenuItem>
         <DropdownMenuItem onClick={() => update.mutate("suspended")}>Suspend</DropdownMenuItem>
         <DropdownMenuItem onClick={() => update.mutate("completed")}>Mark completed</DropdownMenuItem>
         <DropdownMenuSeparator />
@@ -291,11 +292,20 @@ function StudentActions({ student }: { student: Student }) {
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
+    <EditStudentDialog student={student} open={editOpen} onOpenChange={setEditOpen} />
+    </>
   );
 }
 
-function EditStudentDialog({ student }: { student: Student }) {
-  const [open, setOpen] = useState(false);
+function EditStudentDialog({
+  student,
+  open,
+  onOpenChange,
+}: {
+  student: Student;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
   const qc = useQueryClient();
   const mutation = useMutation({
     mutationFn: async (input: z.infer<typeof editSchema>) => {
@@ -316,7 +326,7 @@ function EditStudentDialog({ student }: { student: Student }) {
     onSuccess: () => {
       toast.success("Student updated");
       qc.invalidateQueries({ queryKey: ["students"] });
-      setOpen(false);
+      onOpenChange(false);
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -330,10 +340,7 @@ function EditStudentDialog({ student }: { student: Student }) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DropdownMenuItem onSelect={(e) => e.preventDefault()} onClick={() => setOpen(true)}>
-        Edit student
-      </DropdownMenuItem>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Edit student</DialogTitle>

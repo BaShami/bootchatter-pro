@@ -11,7 +11,10 @@ const createInput = z.object({
   save_as_draft: z.boolean().optional(),
 });
 
-const idInput = z.object({ id: z.string().uuid() });
+const idInput = z.object({
+  id: z.string().uuid(),
+  only_failed: z.boolean().optional(),
+});
 const bootcampInput = z.object({ bootcamp_id: z.string().uuid() });
 
 async function assertCanWrite(supabase: any, userId: string, bootcampId: string) {
@@ -106,7 +109,7 @@ export const sendAnnouncement = createServerFn({ method: "POST" })
     if (annError) throw new Error(annError.message);
     if (!ann) throw new Error("Announcement not found");
     await assertCanWrite(supabase, userId, ann.bootcamp_id);
-    if (ann.status === "completed") throw new Error("Already sent");
+    if (ann.status === "completed" && !data.only_failed) throw new Error("Already sent");
 
     const { data: bootcamp, error: bcError } = await supabase
       .from("bootcamps")
@@ -130,10 +133,14 @@ export const sendAnnouncement = createServerFn({ method: "POST" })
 
     const { data: recipients, error: recError } = await supabase
       .from("announcement_recipients")
-      .select("id, student_id, students:student_id (id, first_name, last_name, phone_number)")
+      .select("id, student_id, processing_status, students:student_id (id, first_name, last_name, phone_number)")
       .eq("announcement_id", ann.id);
     if (recError) throw new Error(recError.message);
-    if (!recipients?.length) throw new Error("No recipients to send to");
+
+    const toSend = (recipients ?? []).filter((r) =>
+      data.only_failed ? r.processing_status === "failed" : true,
+    );
+    if (!toSend.length) throw new Error("No recipients to send to");
 
     await supabase
       .from("announcements")
@@ -145,7 +152,7 @@ export const sendAnnouncement = createServerFn({ method: "POST" })
     let delivered = 0;
     let failed = 0;
 
-    for (const r of recipients) {
+    for (const r of toSend) {
       const student = (r as any).students ?? null;
       const payload = {
         announcement_id: ann.id,
@@ -203,7 +210,7 @@ export const sendAnnouncement = createServerFn({ method: "POST" })
       })
       .eq("id", ann.id);
 
-    return { delivered, failed, total: recipients.length };
+    return { delivered, failed, total: toSend.length };
   });
 
 /** List announcements for a bootcamp. */
@@ -214,11 +221,26 @@ export const listAnnouncements = createServerFn({ method: "GET" })
     const { data: rows, error } = await context.supabase
       .from("announcements")
       .select(
-        "id, title, message, audience_type, status, delivered_count, failed_count, processed_at, created_at",
+        "id, title, message, audience_type, status, delivered_count, failed_count, processed_at, created_at, created_by",
       )
       .eq("bootcamp_id", data.bootcamp_id)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
+
+    const creatorIds = Array.from(
+      new Set((rows ?? []).map((r) => r.created_by).filter(Boolean) as string[]),
+    );
+    let creators = new Map<string, { first_name: string | null; last_name: string | null }>();
+    if (creatorIds.length) {
+      const { data: profiles, error: pe } = await context.supabase
+        .from("profiles")
+        .select("id, first_name, last_name")
+        .in("id", creatorIds);
+      if (pe) throw new Error(pe.message);
+      for (const p of profiles ?? []) {
+        creators.set(p.id, { first_name: p.first_name, last_name: p.last_name });
+      }
+    }
 
     const ids = (rows ?? []).map((r) => r.id);
     let countsById = new Map<string, number>();
@@ -237,6 +259,7 @@ export const listAnnouncements = createServerFn({ method: "GET" })
       announcements: (rows ?? []).map((r) => ({
         ...r,
         recipient_count: countsById.get(r.id) ?? 0,
+        creator: r.created_by ? creators.get(r.created_by) ?? null : null,
       })),
     };
   });

@@ -112,6 +112,7 @@ function AnnouncementsListPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>Title</TableHead>
+                  <TableHead>Sent by</TableHead>
                   <TableHead>Audience</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Delivered</TableHead>
@@ -130,6 +131,20 @@ function AnnouncementsListPage() {
                       >
                         {a.title}
                       </Link>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {a.created_by && a.creator ? (
+                        <Link
+                          to="/teachers/$userId"
+                          params={{ userId: a.created_by }}
+                          className="hover:underline text-primary"
+                        >
+                          {[a.creator.first_name, a.creator.last_name].filter(Boolean).join(" ") ||
+                            "Unknown"}
+                        </Link>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {a.audience_type === "all"

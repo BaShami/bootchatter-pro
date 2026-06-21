@@ -138,3 +138,66 @@ export const listTeacherHistory = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return { history: rows ?? [] };
   });
+
+const userInput = z.object({ user_id: z.string().uuid() });
+
+export const getTeacherProfile = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => userInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("id, email, first_name, last_name")
+      .eq("id", data.user_id)
+      .maybeSingle();
+    if (profileError) throw new Error(profileError.message);
+    if (!profile) throw new Error("User not found");
+
+    const { data: memberships, error: memError } = await supabase
+      .from("bootcamp_members")
+      .select("bootcamp_id, role, status")
+      .eq("user_id", data.user_id);
+    if (memError) throw new Error(memError.message);
+
+    const bootcampIds = (memberships ?? []).map((m) => m.bootcamp_id);
+    let bootcampNames = new Map<string, string>();
+    if (bootcampIds.length) {
+      const { data: bcs } = await supabase.from("bootcamps").select("id, name").in("id", bootcampIds);
+      for (const b of bcs ?? []) bootcampNames.set(b.id, b.name);
+    }
+
+    const bootcamps = (memberships ?? []).map((m) => ({
+      id: m.bootcamp_id,
+      name: bootcampNames.get(m.bootcamp_id) ?? m.bootcamp_id,
+      role: m.role,
+      status: (m as { status?: string }).status ?? "active",
+    }));
+
+    const roles = Array.from(new Set((memberships ?? []).map((m) => m.role)));
+
+    const { data: announcements, error: annError } = await supabase
+      .from("announcements")
+      .select("id, title, created_at, delivered_count, status")
+      .eq("created_by", data.user_id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (annError) throw new Error(annError.message);
+
+    const { data: lessons, error: lessonError } = await supabase
+      .from("lessons")
+      .select("id, title, status, created_at")
+      .eq("created_by", data.user_id)
+      .order("created_at", { ascending: false })
+      .limit(50);
+    if (lessonError) throw new Error(lessonError.message);
+
+    return {
+      profile,
+      bootcamps,
+      roles,
+      announcements: announcements ?? [],
+      lessons: lessons ?? [],
+    };
+  });
