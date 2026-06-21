@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Plus, Search, MoreHorizontal } from "lucide-react";
+import { Plus, Search, MoreHorizontal, Upload, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useBootcamps } from "@/hooks/use-bootcamps";
 import { PageHeader } from "@/components/page-header";
@@ -45,10 +45,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Checkbox } from "@/components/ui/checkbox";
 import { formatDate, formatRelative } from "@/lib/format";
+import { csvFilename, downloadCsv, parseCsv, toCsv } from "@/lib/csv";
+import { cn } from "@/lib/utils";
+
+const searchSchema = z.object({
+  highlight: z.string().uuid().optional(),
+});
 
 export const Route = createFileRoute("/_authenticated/students")({
   head: () => ({ meta: [{ title: "Students · Bootcamp Admin" }] }),
+  validateSearch: (s) => searchSchema.parse(s),
   component: StudentsPage,
 });
 
@@ -97,10 +105,14 @@ const STATUS_STYLES: Record<Student["enrollment_status"], string> = {
 };
 
 function StudentsPage() {
+  const { highlight } = Route.useSearch();
   const { data: bootcamps } = useBootcamps();
   const [bootcampFilter, setBootcampFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [q, setQ] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
+  const qc = useQueryClient();
 
   const students = useQuery({
     queryKey: ["students"],
@@ -132,6 +144,88 @@ function StudentsPage() {
     );
   });
 
+  const allFilteredSelected =
+    filtered.length > 0 && filtered.every((s) => selectedIds.includes(s.id));
+
+  useEffect(() => {
+    if (!highlight) return;
+    const el = rowRefs.current[highlight];
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("bg-primary/15");
+      const t = setTimeout(() => el.classList.remove("bg-primary/15"), 2500);
+      return () => clearTimeout(t);
+    }
+  }, [highlight, filtered]);
+
+  const bulkDelete = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { error } = await supabase.from("students").delete().in("id", ids);
+      if (error) throw error;
+      return ids.length;
+    },
+    onSuccess: (count) => {
+      toast.success(`Deleted ${count} student${count === 1 ? "" : "s"}`);
+      setSelectedIds([]);
+      qc.invalidateQueries({ queryKey: ["students"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const bulkStatus = useMutation({
+    mutationFn: async ({
+      ids,
+      status,
+    }: {
+      ids: string[];
+      status: Student["enrollment_status"];
+    }) => {
+      const { error } = await supabase
+        .from("students")
+        .update({ enrollment_status: status })
+        .in("id", ids);
+      if (error) throw error;
+      return ids.length;
+    },
+    onSuccess: (count) => {
+      toast.success(`Updated ${count} student${count === 1 ? "" : "s"}`);
+      setSelectedIds([]);
+      qc.invalidateQueries({ queryKey: ["students"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  function exportStudents() {
+    const rows = filtered.map((s) => [
+      s.first_name,
+      s.last_name ?? "",
+      s.phone_number,
+      s.email ?? "",
+      s.enrollment_status,
+      s.consent_status,
+      s.enrolled_at ?? "",
+      s.last_active_at ?? "",
+      bootcampLookup[s.bootcamp_id] ?? "",
+    ]);
+    const header = [
+      "first_name",
+      "last_name",
+      "phone_number",
+      "email",
+      "enrollment_status",
+      "consent_status",
+      "enrolled_at",
+      "last_active_at",
+      "bootcamp_name",
+    ];
+    const bootcampName =
+      bootcampFilter !== "all" ? bootcampLookup[bootcampFilter] ?? "bootcamp" : "all";
+    downloadCsv(csvFilename("students", bootcampName), toCsv([header, ...rows]));
+  }
+
+  const selectedStudents = filtered.filter((s) => selectedIds.includes(s.id));
+  const bulkBootcampId = selectedStudents[0]?.bootcamp_id;
+
   return (
     <div>
       <PageHeader
@@ -139,7 +233,13 @@ function StudentsPage() {
         description="Students interact through WhatsApp via Make.com. Phone numbers identify them — store them in international (E.164) format."
         actions={
           (bootcamps ?? []).length === 0 ? null : (
-            <AddStudentDialog bootcamps={bootcamps ?? []} />
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={exportStudents}>
+                <Download className="h-4 w-4 mr-1.5" /> Export
+              </Button>
+              <ImportCsvDialog bootcamps={bootcamps ?? []} defaultBootcampId={bootcampFilter !== "all" ? bootcampFilter : bootcamps![0].id} />
+              <AddStudentDialog bootcamps={bootcamps ?? []} />
+            </div>
           )
         }
       />
@@ -176,6 +276,56 @@ function StudentsPage() {
         </Select>
       </div>
 
+      {selectedIds.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 p-3 rounded-lg border bg-muted/40">
+          <span className="text-sm font-medium">{selectedIds.length} selected</span>
+          <Select
+            onValueChange={(v) =>
+              bulkStatus.mutate({
+                ids: selectedIds,
+                status: v as Student["enrollment_status"],
+              })
+            }
+          >
+            <SelectTrigger className="w-44 h-8">
+              <SelectValue placeholder="Change status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="active">Active</SelectItem>
+              <SelectItem value="suspended">Suspended</SelectItem>
+              <SelectItem value="completed">Completed</SelectItem>
+              <SelectItem value="removed">Removed</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={bulkDelete.isPending}
+            onClick={() => {
+              if (confirm(`Delete ${selectedIds.length} students? This cannot be undone.`)) {
+                bulkDelete.mutate(selectedIds);
+              }
+            }}
+          >
+            Delete selected
+          </Button>
+          {bulkBootcampId && (
+            <Button size="sm" variant="outline" asChild>
+              <Link
+                to="/announcements/new"
+                search={{
+                  bootcamp_id: bulkBootcampId,
+                  student_ids: selectedIds.join(","),
+                }}
+              >
+                Send announcement
+              </Link>
+            </Button>
+          )}
+          <Button size="sm" variant="ghost" onClick={() => setSelectedIds([])}>Clear</Button>
+        </div>
+      )}
+
       <Card>
         <CardContent className="p-0">
           {students.isLoading ? (
@@ -194,6 +344,16 @@ function StudentsPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead className="w-10">
+                      <Checkbox
+                        checked={allFilteredSelected}
+                        onCheckedChange={(checked) => {
+                          if (checked) setSelectedIds(filtered.map((s) => s.id));
+                          else setSelectedIds([]);
+                        }}
+                        aria-label="Select all"
+                      />
+                    </TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>Phone</TableHead>
                     <TableHead>Bootcamp</TableHead>
@@ -205,7 +365,25 @@ function StudentsPage() {
                 </TableHeader>
                 <TableBody>
                   {filtered.map((s) => (
-                    <TableRow key={s.id}>
+                    <TableRow
+                      key={s.id}
+                      ref={(el) => {
+                        rowRefs.current[s.id] = el;
+                      }}
+                      data-student-id={s.id}
+                      className={cn(highlight === s.id && "bg-primary/15")}
+                    >
+                      <TableCell>
+                        <Checkbox
+                          checked={selectedIds.includes(s.id)}
+                          onCheckedChange={(checked) => {
+                            setSelectedIds((prev) =>
+                              checked ? [...prev, s.id] : prev.filter((id) => id !== s.id),
+                            );
+                          }}
+                          aria-label={`Select ${s.first_name}`}
+                        />
+                      </TableCell>
                       <TableCell>
                         <div className="font-medium">{s.first_name} {s.last_name ?? ""}</div>
                         {s.email ? <div className="text-xs text-muted-foreground">{s.email}</div> : null}
@@ -430,6 +608,152 @@ function EditStudentDialog({
             </Button>
           </DialogFooter>
         </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+type CsvPreviewRow = {
+  first_name: string;
+  last_name: string;
+  phone_number: string;
+  email: string;
+  consent_status: "pending" | "granted" | "revoked";
+};
+
+function ImportCsvDialog({
+  bootcamps,
+  defaultBootcampId,
+}: {
+  bootcamps: { id: string; name: string }[];
+  defaultBootcampId: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const [bootcampId, setBootcampId] = useState(defaultBootcampId);
+  const [preview, setPreview] = useState<CsvPreviewRow[]>([]);
+  const qc = useQueryClient();
+
+  const importMut = useMutation({
+    mutationFn: async (rows: CsvPreviewRow[]) => {
+      let ok = 0;
+      let fail = 0;
+      for (const row of rows) {
+        const { error } = await supabase.from("students").insert({
+          bootcamp_id: bootcampId,
+          first_name: row.first_name,
+          last_name: row.last_name || null,
+          email: row.email || null,
+          phone_number: row.phone_number,
+          consent_status: row.consent_status,
+          enrollment_status: "active",
+          enrolled_at: new Date().toISOString(),
+        });
+        if (error) fail++;
+        else ok++;
+      }
+      return { ok, fail };
+    },
+    onSuccess: ({ ok, fail }) => {
+      toast.success(`Imported ${ok} students${fail ? `, ${fail} failed` : ""}`);
+      qc.invalidateQueries({ queryKey: ["students"] });
+      setOpen(false);
+      setPreview([]);
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const text = String(reader.result ?? "");
+      const lines = parseCsv(text);
+      if (lines.length < 2) return toast.error("CSV must have a header row and at least one data row");
+      const header = lines[0].map((h) => h.toLowerCase().replace(/\s+/g, "_"));
+      const idx = (name: string) => header.indexOf(name);
+      const rows: CsvPreviewRow[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i];
+        const first = line[idx("first_name")] ?? "";
+        const phone = line[idx("phone_number")] ?? "";
+        if (!first || !phone) continue;
+        const consent = (line[idx("consent_status")] ?? "pending").toLowerCase();
+        rows.push({
+          first_name: first,
+          last_name: line[idx("last_name")] ?? "",
+          phone_number: phone,
+          email: line[idx("email")] ?? "",
+          consent_status:
+            consent === "granted" || consent === "revoked" ? consent : "pending",
+        });
+      }
+      setPreview(rows);
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setPreview([]); }}>
+      <DialogTrigger asChild>
+        <Button variant="outline">
+          <Upload className="h-4 w-4 mr-1.5" /> Import CSV
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Import students from CSV</DialogTitle>
+          <DialogDescription>
+            Columns: first_name, last_name, phone_number, email (optional), consent_status (optional).
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label>Bootcamp</Label>
+            <Select value={bootcampId} onValueChange={setBootcampId}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {bootcamps.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Input type="file" accept=".csv,text/csv" onChange={onFile} />
+          {preview.length > 0 && (
+            <div className="border rounded-md max-h-48 overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>First</TableHead>
+                    <TableHead>Last</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>Email</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {preview.map((r, i) => (
+                    <TableRow key={i}>
+                      <TableCell>{r.first_name}</TableCell>
+                      <TableCell>{r.last_name}</TableCell>
+                      <TableCell>{r.phone_number}</TableCell>
+                      <TableCell>{r.email}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button
+            disabled={!preview.length || importMut.isPending}
+            onClick={() => importMut.mutate(preview)}
+          >
+            {importMut.isPending ? "Importing…" : `Import ${preview.length} students`}
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );

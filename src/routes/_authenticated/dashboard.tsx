@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { GraduationCap, Users, BookOpen, MessageSquare, TrendingUp, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -76,7 +76,7 @@ function useRecentActivity() {
           .limit(5),
         supabase
           .from("questions")
-          .select("id, question_text, created_at, confidence_score")
+          .select("id, question_text, created_at, confidence_score, student_id, students(first_name, last_name)")
           .order("created_at", { ascending: false })
           .limit(5),
         supabase
@@ -217,15 +217,30 @@ function Dashboard() {
               <Empty>No questions yet.</Empty>
             ) : (
               <ul className="space-y-3">
-                {activity.data?.questions.map((q) => (
+                {activity.data?.questions.map((q) => {
+                  const student = (q as { students?: { first_name?: string; last_name?: string } | null }).students;
+                  const studentName = student
+                    ? `${student.first_name ?? ""} ${student.last_name ?? ""}`.trim()
+                    : null;
+                  return (
                   <li key={q.id} className="text-sm">
+                    {studentName && (q as { student_id?: string }).student_id ? (
+                      <Link
+                        to="/students"
+                        search={{ highlight: (q as { student_id: string }).student_id }}
+                        className="font-medium text-primary hover:underline block truncate"
+                      >
+                        {studentName}
+                      </Link>
+                    ) : null}
                     <div className="line-clamp-2">{q.question_text}</div>
                     <div className="text-xs text-muted-foreground">
                       {formatRelative(q.created_at)}
                       {q.confidence_score != null ? ` · conf ${Number(q.confidence_score).toFixed(2)}` : ""}
                     </div>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
             )}
           </CardContent>

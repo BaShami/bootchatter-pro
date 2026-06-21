@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Download } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePermissions } from "@/hooks/use-auth";
 import { useBootcamps } from "@/hooks/use-bootcamps";
@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/sheet";
 import { formatDate } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { csvFilename, downloadCsv, toCsv } from "@/lib/csv";
 
 export const Route = createFileRoute("/_authenticated/questions")({
   head: () => ({ meta: [{ title: "Questions · Bootcamp Admin" }] }),
@@ -157,6 +158,44 @@ function QuestionsPage() {
 
   const open = questions?.find((q) => q.id === openId) ?? null;
 
+  function exportQuestions() {
+    const bootcampName =
+      bootcampId === "all"
+        ? "all"
+        : accessibleBootcamps.find((b) => b.id === bootcampId)?.name ?? "bootcamp";
+    const header = [
+      "created_at",
+      "student_first_name",
+      "student_last_name",
+      "student_phone",
+      "question_text",
+      "ai_answer",
+      "confidence_score",
+      "retrieval_method",
+      "source_lessons",
+      "review_status",
+      "bootcamp_name",
+    ];
+    const rows = (questions ?? []).map((q) => {
+      const bcName = accessibleBootcamps.find((b) => b.id === q.bootcamp_id)?.name ?? "";
+      const lessons = (q.source_lessons ?? []).map((l) => l.lesson_title).join("; ");
+      return [
+        q.created_at,
+        q.students?.first_name ?? "",
+        q.students?.last_name ?? "",
+        q.students?.phone_number ?? "",
+        q.question_text,
+        q.ai_answer ?? "",
+        q.confidence_score != null ? String(q.confidence_score) : "",
+        q.retrieval_method ?? "",
+        lessons,
+        q.review_status ?? "",
+        bcName,
+      ];
+    });
+    downloadCsv(csvFilename("questions", bootcampName), toCsv([header, ...rows]));
+  }
+
   if (bcLoading) return <Skeleton className="h-72 w-full" />;
   if (!accessibleBootcamps.length) {
     return (
@@ -172,6 +211,11 @@ function QuestionsPage() {
       <PageHeader
         title="Questions"
         description="Every question your students have asked, with the AI answer and source lessons."
+        actions={
+          <Button variant="outline" onClick={exportQuestions} disabled={!questions?.length}>
+            <Download className="h-4 w-4 mr-1.5" /> Export
+          </Button>
+        }
       />
 
       <div className="flex flex-wrap gap-2 mb-4">

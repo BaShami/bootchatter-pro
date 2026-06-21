@@ -220,14 +220,18 @@ function AnalyticsPage() {
           ) : topLessonsData.length === 0 ? (
             <p className="text-sm text-muted-foreground">No lesson references yet.</p>
           ) : (
-            <ResponsiveContainer width="100%" height={Math.max(220, topLessonsData.length * 36)}>
-              <BarChart data={topLessonsData} layout="vertical" margin={{ left: 20 }}>
+            <ResponsiveContainer width="100%" height={250}>
+              <BarChart
+                data={topLessonsData}
+                layout="vertical"
+                margin={{ left: 120, right: 30, top: 10, bottom: 10 }}
+              >
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis type="number" allowDecimals={false} stroke="hsl(var(--muted-foreground))" />
                 <YAxis
                   type="category"
                   dataKey="title"
-                  width={200}
+                  width={110}
                   stroke="hsl(var(--muted-foreground))"
                   fontSize={12}
                 />
@@ -238,7 +242,7 @@ function AnalyticsPage() {
                     borderRadius: "0.5rem",
                   }}
                 />
-                <Bar dataKey="count" fill="#3b82f6" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="count" fill="#3b82f6" barSize={20} radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}

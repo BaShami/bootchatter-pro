@@ -37,6 +37,7 @@ import { createAnnouncement, sendAnnouncement } from "@/lib/announcements.functi
 
 const searchSchema = z.object({
   bootcamp_id: z.string().uuid().optional(),
+  student_ids: z.string().optional(),
 });
 
 export const Route = createFileRoute("/_authenticated/announcements/new")({
@@ -50,7 +51,7 @@ const WHATSAPP_LIMIT = 1000;
 function NewAnnouncementPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const { bootcamp_id: initialBootcampId } = Route.useSearch();
+  const { bootcamp_id: initialBootcampId, student_ids: initialStudentIds } = Route.useSearch();
   const { data: perms } = usePermissions();
   const { data: bootcamps } = useBootcamps();
 
@@ -67,8 +68,12 @@ function NewAnnouncementPage() {
 
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
-  const [audienceType, setAudienceType] = useState<"all" | "specific">("all");
-  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [audienceType, setAudienceType] = useState<"all" | "specific">(
+    initialStudentIds ? "specific" : "all",
+  );
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>(
+    initialStudentIds ? initialStudentIds.split(",").filter(Boolean) : [],
+  );
   const [search, setSearch] = useState("");
   const [confirmOpen, setConfirmOpen] = useState(false);
 
