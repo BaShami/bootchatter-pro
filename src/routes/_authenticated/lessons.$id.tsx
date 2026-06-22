@@ -12,13 +12,11 @@ import {
   Trash2,
   Eye,
   EyeOff,
-  FileText,
   Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   useLesson,
-  useLessonFiles,
   useLessonChunkCount,
 } from "@/hooks/use-lessons";
 import { processLesson, setLessonPublished } from "@/lib/lessons.functions";
