@@ -12,13 +12,11 @@ import {
   Trash2,
   Eye,
   EyeOff,
-  FileText,
   Loader2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   useLesson,
-  useLessonFiles,
   useLessonChunkCount,
 } from "@/hooks/use-lessons";
 import { processLesson, setLessonPublished } from "@/lib/lessons.functions";
@@ -40,6 +38,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatDate } from "@/lib/format";
 import { LessonSyncCard } from "@/components/lesson-sync-card";
+import { LessonFilesCard } from "@/components/lesson-files-card";
 import { QuizResultsCard } from "@/components/quiz-results-card";
 
 
@@ -71,7 +70,7 @@ function LessonDetail() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: lesson, isLoading } = useLesson(id);
-  const { data: files } = useLessonFiles(id);
+  
   const { data: chunkCount } = useLessonChunkCount(id);
 
   // local edit state
@@ -438,35 +437,8 @@ function LessonDetail() {
 
           <LessonSyncCard lessonId={id} />
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Files</CardTitle>
-              <CardDescription>Originals stored privately.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {!files || files.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No files uploaded yet.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {files.map((f) => (
-                    <li
-                      key={f.id}
-                      className="flex items-center gap-2 text-sm border border-border rounded-md p-2"
-                    >
-                      <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate">{f.file_name}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {f.file_size ? `${Math.round(f.file_size / 1024)} KB · ` : ""}
-                          {formatDate(f.created_at)}
-                        </div>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+          <LessonFilesCard lessonId={id} />
+
         </div>
       </div>
 

@@ -256,3 +256,56 @@ export const refreshLessonSyncStatus = createServerFn({ method: "POST" })
     return { outcome };
   });
 
+const FileIdInput = z.object({ file_id: z.string().uuid() });
+
+
+export const softDeleteLessonFile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => FileIdInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: file } = await supabase
+      .from("lesson_files")
+      .select("id, bootcamp_id")
+      .eq("id", data.file_id)
+      .maybeSingle();
+    if (!file) throw new Error("File not found");
+    const { data: ok } = await supabase.rpc("is_bootcamp_teacher", {
+      _user_id: userId,
+      _bootcamp_id: file.bootcamp_id,
+    });
+    if (!ok) throw new Error("Forbidden");
+
+    const { error } = await supabase
+      .from("lesson_files")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: userId })
+      .eq("id", data.file_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+export const restoreLessonFile = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => FileIdInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: file } = await supabase
+      .from("lesson_files")
+      .select("id, bootcamp_id")
+      .eq("id", data.file_id)
+      .maybeSingle();
+    if (!file) throw new Error("File not found");
+    const { data: ok } = await supabase.rpc("is_bootcamp_teacher", {
+      _user_id: userId,
+      _bootcamp_id: file.bootcamp_id,
+    });
+    if (!ok) throw new Error("Forbidden");
+
+    const { error } = await supabase
+      .from("lesson_files")
+      .update({ deleted_at: null, deleted_by: null })
+      .eq("id", data.file_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
