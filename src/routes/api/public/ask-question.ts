@@ -154,6 +154,7 @@ export const Route = createFileRoute("/api/public/ask-question")({
           .from("students")
           .select("id, bootcamp_id, first_name, last_name, enrollment_status, consent_status")
           .eq("phone_number", body.phone_number)
+          .eq("enrollment_status", "active")
           .maybeSingle();
         if (studentErr) return json(500, { error: "Database error" });
         if (!student) {
