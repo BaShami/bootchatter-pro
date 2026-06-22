@@ -106,6 +106,7 @@ export const deleteKbArticle = createServerFn({ method: "POST" })
       .from("kb_articles")
       .select("id, bootcamp_id")
       .eq("id", data.article_id)
+      .is("deleted_at", null)
       .maybeSingle();
     if (!row) throw new Error("Article not found");
     const { data: isAdmin } = await supabase.rpc("is_bootcamp_admin", {
@@ -117,7 +118,8 @@ export const deleteKbArticle = createServerFn({ method: "POST" })
     const { error } = await supabase
       .from("kb_articles")
       .update({ deleted_at: new Date().toISOString() })
-      .eq("id", data.article_id);
+      .eq("id", data.article_id)
+      .is("deleted_at", null);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
