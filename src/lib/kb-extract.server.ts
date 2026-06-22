@@ -15,7 +15,7 @@ async function extractPdfText(buffer: Buffer): Promise<string> {
     }
     return parts.join("\n");
   } finally {
-    await doc.destroy();
+    await (doc as any).destroy?.();
   }
 }
 
