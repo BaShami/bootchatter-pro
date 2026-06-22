@@ -73,7 +73,16 @@ function isHumanEscalation(message: string): boolean {
   return /\bhelp\b/i.test(message);
 }
 
-// Simple in-memory sliding-window rate limit (single-instance deployment).
+function formatKbContext(
+  articles: { title: string; tag: string; extracted_text: string | null }[],
+): string {
+  const sections = articles.map(
+    (article) =>
+      `[${article.tag.toUpperCase()}] ${article.title}\n${article.extracted_text ?? ""}`,
+  );
+  return `KNOWLEDGE BASE ARTICLES:\n\n${sections.join("\n\n")}`;
+}
+
 // Key: phone_number. Limit: 10 requests / 60 seconds.
 const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -376,15 +385,13 @@ export const Route = createFileRoute("/api/public/ask-question")({
           .not("extracted_text", "is", null);
 
         if (kbArticles && kbArticles.length > 0) {
-          const kbContext = kbArticles
-            .map((article) => `## ${article.title} [${article.tag}]\n${article.extracted_text}`)
-            .join("\n\n");
+          const kbContext = formatKbContext(kbArticles);
 
           const { openaiChat } = await import("@/lib/openai.server");
           const kbResponse = await openaiChat({
             system:
-              "You are a helpful assistant for a bootcamp. You have access to the bootcamp's knowledge base articles below. Answer the student's question using ONLY the knowledge base if it is relevant. If the knowledge base does not contain the answer, reply with exactly the word FALLBACK and nothing else.",
-            user: `${kbContext}\n\n---\n\nStudent question: ${body.question}`,
+              "You are a helpful assistant for a bootcamp. Answer the student's question using ONLY the knowledge base articles provided. If the knowledge base does not contain a relevant answer, reply with exactly the single word FALLBACK and nothing else.",
+            user: `${kbContext}\n\nStudent question: ${body.question}`,
             max_tokens: 500,
           });
 
