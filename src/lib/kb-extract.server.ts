@@ -1,5 +1,17 @@
 import mammoth from "mammoth";
-import pdfParse from "pdf-parse";
+
+async function extractPdfText(buffer: Buffer): Promise<string> {
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const data = new Uint8Array(buffer);
+  const doc = await pdfjs.getDocument({ data, isEvalSupported: false, useWorkerFetch: false, disableWorker: true }).promise;
+  const parts: string[] = [];
+  for (let p = 1; p <= doc.numPages; p++) {
+    const page = await doc.getPage(p);
+    const content = await page.getTextContent();
+    parts.push(content.items.map((it) => ("str" in it ? (it as { str: string }).str : "")).join(" "));
+  }
+  return parts.join("\n\n");
+}
 
 const MAX_EXTRACTED_CHARS = 20_000;
 
