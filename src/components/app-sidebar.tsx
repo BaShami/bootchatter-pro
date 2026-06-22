@@ -107,19 +107,34 @@ export function AppSidebar() {
           );
         })}
         {perms?.isPlatformAdmin && (
-          <Link
-            to="/admin/password-requests"
-            className={cn(
-              "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
-              pathname.startsWith("/admin/password-requests")
-                ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
-                : "hover:bg-sidebar-accent/60 text-sidebar-foreground/80",
-            )}
-          >
-            <KeyRound className="h-4 w-4" />
-            <span>Password requests</span>
-          </Link>
+          <>
+            <Link
+              to="/admin/password-requests"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
+                pathname.startsWith("/admin/password-requests")
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                  : "hover:bg-sidebar-accent/60 text-sidebar-foreground/80",
+              )}
+            >
+              <KeyRound className="h-4 w-4" />
+              <span>Password requests</span>
+            </Link>
+            <Link
+              to="/admin/recycle-bin"
+              className={cn(
+                "flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors",
+                pathname.startsWith("/admin/recycle-bin")
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+                  : "hover:bg-sidebar-accent/60 text-sidebar-foreground/80",
+              )}
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Recycle bin</span>
+            </Link>
+          </>
         )}
+
       </nav>
 
       <div className="border-t border-sidebar-border p-3">
