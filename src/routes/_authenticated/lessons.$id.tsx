@@ -70,7 +70,7 @@ function LessonDetail() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { data: lesson, isLoading } = useLesson(id);
-  const { data: files } = useLessonFiles(id);
+  
   const { data: chunkCount } = useLessonChunkCount(id);
 
   // local edit state
