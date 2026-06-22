@@ -103,27 +103,30 @@ function StatCard({
   hint,
   icon: Icon,
   loading,
+  accent,
 }: {
   label: string;
   value: number | string;
   hint?: string;
   icon: typeof Users;
   loading?: boolean;
+  accent?: "amber";
 }) {
+  const amber = accent === "amber";
   return (
-    <Card>
+    <Card className={amber ? "border-amber-300 bg-amber-50/60 dark:bg-amber-950/20" : undefined}>
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
-            <div className="text-xs uppercase tracking-wider text-muted-foreground">{label}</div>
+            <div className={cn("text-xs uppercase tracking-wider", amber ? "text-amber-800 dark:text-amber-300" : "text-muted-foreground")}>{label}</div>
             {loading ? (
               <Skeleton className="h-7 w-16" />
             ) : (
-              <div className="text-2xl font-semibold tabular-nums">{value}</div>
+              <div className={cn("text-2xl font-semibold tabular-nums", amber && "text-amber-900 dark:text-amber-200")}>{value}</div>
             )}
             {hint ? <div className="text-xs text-muted-foreground">{hint}</div> : null}
           </div>
-          <div className="h-9 w-9 rounded-md bg-accent text-accent-foreground grid place-items-center">
+          <div className={cn("h-9 w-9 rounded-md grid place-items-center", amber ? "bg-amber-200/70 text-amber-900 dark:bg-amber-900/40 dark:text-amber-200" : "bg-accent text-accent-foreground")}>
             <Icon className="h-4 w-4" />
           </div>
         </div>
