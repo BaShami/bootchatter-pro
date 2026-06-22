@@ -38,6 +38,7 @@ function useStats() {
         questionsToday,
         lowConf,
         unanswered,
+        openEscalations,
       ] = await Promise.all([
         supabase.from("bootcamps").select("id", { count: "exact", head: true }),
         supabase.from("students").select("id", { count: "exact", head: true }),
@@ -48,6 +49,7 @@ function useStats() {
         supabase.from("questions").select("id", { count: "exact", head: true }).gte("created_at", startOfToday.toISOString()),
         supabase.from("questions").select("id", { count: "exact", head: true }).lt("confidence_score", 0.5),
         supabase.from("questions").select("id", { count: "exact", head: true }).is("ai_answer", null),
+        supabase.from("escalations").select("id", { count: "exact", head: true }).eq("status", "open"),
       ]);
       return {
         bootcamps: bootcamps.count ?? 0,
@@ -59,6 +61,7 @@ function useStats() {
         questionsToday: questionsToday.count ?? 0,
         lowConf: lowConf.count ?? 0,
         unanswered: unanswered.count ?? 0,
+        openEscalations: openEscalations.count ?? 0,
       };
     },
   });
