@@ -50,6 +50,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { formatDate, formatRelative } from "@/lib/format";
 import { csvFilename, downloadCsv, parseCsv, toCsv } from "@/lib/csv";
 import { triggerStudentOnboarding } from "@/lib/student-onboarding.functions";
+import { updateStudentConsent } from "@/lib/students.functions";
 import { cn } from "@/lib/utils";
 
 const searchSchema = z.object({
@@ -387,7 +388,19 @@ function StudentsPage() {
                         />
                       </TableCell>
                       <TableCell>
-                        <div className="font-medium">{s.first_name} {s.last_name ?? ""}</div>
+                        <div className="font-medium flex items-center gap-2 flex-wrap">
+                          <span>
+                            {s.first_name} {s.last_name ?? ""}
+                          </span>
+                          {s.consent_status === "revoked" ? (
+                            <Badge
+                              variant="outline"
+                              className="bg-amber-100 text-amber-900 hover:bg-amber-100 border-transparent text-xs"
+                            >
+                              Opted out
+                            </Badge>
+                          ) : null}
+                        </div>
                         {s.email ? <div className="text-xs text-muted-foreground">{s.email}</div> : null}
                       </TableCell>
                       <TableCell className="tabular-nums">{s.phone_number}</TableCell>
@@ -419,6 +432,7 @@ function StudentsPage() {
 function StudentActions({ student }: { student: Student }) {
   const qc = useQueryClient();
   const [editOpen, setEditOpen] = useState(false);
+  const updateConsentFn = useServerFn(updateStudentConsent);
   const update = useMutation({
     mutationFn: async (status: Student["enrollment_status"]) => {
       const { error } = await supabase
@@ -429,6 +443,18 @@ function StudentActions({ student }: { student: Student }) {
     },
     onSuccess: (_d, status) => {
       toast.success(`Student marked as ${status}`);
+      qc.invalidateQueries({ queryKey: ["students"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const consent = useMutation({
+    mutationFn: async (next: "granted" | "revoked") =>
+      updateConsentFn({ data: { student_id: student.id, consent_status: next } }),
+    onSuccess: (_d, next) => {
+      toast.success(
+        next === "granted" ? "WhatsApp consent restored" : "WhatsApp consent revoked",
+      );
       qc.invalidateQueries({ queryKey: ["students"] });
     },
     onError: (e: Error) => toast.error(e.message),
@@ -456,6 +482,21 @@ function StudentActions({ student }: { student: Student }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuItem onClick={() => setEditOpen(true)}>Edit student</DropdownMenuItem>
+          {student.consent_status === "revoked" ? (
+            <DropdownMenuItem
+              disabled={consent.isPending}
+              onClick={() => consent.mutate("granted")}
+            >
+              Restore WhatsApp consent
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem
+              disabled={consent.isPending}
+              onClick={() => consent.mutate("revoked")}
+            >
+              Revoke WhatsApp consent
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={() => update.mutate("active")}>Mark active</DropdownMenuItem>
         <DropdownMenuItem onClick={() => update.mutate("suspended")}>Suspend</DropdownMenuItem>
         <DropdownMenuItem onClick={() => update.mutate("completed")}>Mark completed</DropdownMenuItem>
