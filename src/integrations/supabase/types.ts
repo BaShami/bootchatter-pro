@@ -340,6 +340,62 @@ export type Database = {
         }
         Relationships: []
       }
+      kb_articles: {
+        Row: {
+          bootcamp_id: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          extracted_text: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id: string
+          tag: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          bootcamp_id: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          extracted_text?: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          file_type: string
+          id?: string
+          tag: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          bootcamp_id?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          extracted_text?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          file_type?: string
+          id?: string
+          tag?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kb_articles_bootcamp_id_fkey"
+            columns: ["bootcamp_id"]
+            isOneToOne: false
+            referencedRelation: "bootcamps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       lesson_chunks: {
         Row: {
           bootcamp_id: string

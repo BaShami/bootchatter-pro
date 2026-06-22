@@ -35,6 +35,7 @@ import { fetchBootcampMembersWithProfiles } from "@/lib/bootcamp-members";
 import { BootcampKnowledgeBaseCard } from "@/components/bootcamp-kb-card";
 import { TeachersCard } from "@/components/teachers-card";
 import { BootcampOnboardingChecklist } from "@/components/bootcamp-onboarding-checklist";
+import { KnowledgeBaseCard } from "@/components/knowledge-base-card";
 
 export const Route = createFileRoute("/_authenticated/bootcamps/$id")({
   head: () => ({ meta: [{ title: "Bootcamp · Bootcamp Admin" }] }),
@@ -327,6 +328,10 @@ function BootcampDetail() {
         <div className="lg:col-span-1">
           <BootcampKnowledgeBaseCard bootcampId={id!} />
         </div>
+      </div>
+
+      <div className="mt-6">
+        <KnowledgeBaseCard bootcampId={id!} />
       </div>
     </div>
   );
