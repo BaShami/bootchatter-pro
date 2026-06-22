@@ -77,49 +77,15 @@ export function LessonFilesCard({ lessonId }: { lessonId: string }) {
         ) : (
           <ul className="space-y-2">
             {activeFiles.map((f) => (
-              <li
+              <ActiveFileRow
                 key={f.id}
-                className="flex items-center gap-2 text-sm border border-border rounded-md p-2"
-              >
-                <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate">{f.file_name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {f.file_size ? `${Math.round(f.file_size / 1024)} KB · ` : ""}
-                    {formatDate(f.created_at)}
-                  </div>
-                </div>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 text-muted-foreground hover:text-destructive shrink-0"
-                      aria-label="Move to recycle bin"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-64" align="end">
-                    <div className="space-y-3">
-                      <div className="text-sm font-medium">Move to recycle bin?</div>
-                      <p className="text-xs text-muted-foreground">
-                        You can restore it later. The original file is kept in storage.
-                      </p>
-                      <div className="flex justify-end gap-2">
-                        <PopoverConfirmButtons
-                          onConfirm={() => softDelete.mutate(f.id)}
-                          confirmLabel="Confirm"
-                          confirmDisabled={softDelete.isPending}
-                        />
-                      </div>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              </li>
+                file={f}
+                onConfirmDelete={() => softDelete.mutate(f.id)}
+                deleting={softDelete.isPending}
+              />
             ))}
           </ul>
+
         )}
 
         <Collapsible open={binOpen} onOpenChange={setBinOpen}>
