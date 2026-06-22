@@ -42,9 +42,18 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
         user_id: profile?.id ?? null,
         status: "pending",
       });
+    } else if (profile?.id) {
+      // Non-teacher accounts use the standard Supabase email reset flow.
+      // We fire-and-forget so the response timing/shape doesn't reveal whether
+      // an account exists or what role it has.
+      try {
+        await supabaseAdmin.auth.resetPasswordForEmail(email);
+      } catch (err) {
+        console.error("[requestPasswordReset] resetPasswordForEmail failed", err);
+      }
     }
 
-    return { ok: true, isTeacher };
+    return { ok: true };
   });
 
 /** Platform admin: list pending password reset requests. */
