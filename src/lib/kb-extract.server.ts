@@ -52,8 +52,7 @@ export async function extractKbArticleText(articleId: string) {
     if (fileType === "text/plain" || fileType === "text/markdown" || ext === "txt" || ext === "md") {
       extracted = buffer.toString("utf-8");
     } else if (fileType === "application/pdf" || ext === "pdf") {
-      const parsed = await pdfParse(buffer);
-      extracted = parsed.text;
+      extracted = await extractPdfText(buffer);
     } else if (
       fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
       ext === "docx"
