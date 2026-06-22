@@ -89,6 +89,9 @@ export const uploadKbArticle = createServerFn({ method: "POST" })
       throw new Error(insErr.message);
     }
 
+    const { triggerKbExtraction } = await import("@/lib/kb-extract-trigger.server");
+    void triggerKbExtraction(articleId);
+
     return { id: articleId };
   });
 

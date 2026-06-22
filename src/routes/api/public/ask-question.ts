@@ -269,6 +269,31 @@ export const Route = createFileRoute("/api/public/ask-question")({
           }
         }
 
+        const { data: kbArticles } = await supabaseAdmin
+          .from("kb_articles")
+          .select("title, tag, extracted_text")
+          .eq("bootcamp_id", student.bootcamp_id)
+          .is("deleted_at", null)
+          .not("extracted_text", "is", null);
+
+        if (kbArticles && kbArticles.length > 0) {
+          const kbContext = kbArticles
+            .map((article) => `## ${article.title} [${article.tag}]\n${article.extracted_text}`)
+            .join("\n\n");
+
+          const { openaiChat } = await import("@/lib/openai.server");
+          const kbResponse = await openaiChat({
+            system:
+              "You are a helpful assistant for a bootcamp. You have access to the bootcamp's knowledge base articles below. Answer the student's question using ONLY the knowledge base if it is relevant. If the knowledge base does not contain the answer, reply with exactly the word FALLBACK and nothing else.",
+            user: `${kbContext}\n\n---\n\nStudent question: ${body.question}`,
+            max_tokens: 500,
+          });
+
+          if (kbResponse.trim() !== "FALLBACK") {
+            return json(200, { answer: kbResponse });
+          }
+        }
+
         try {
           const { askQuestion } = await import("@/lib/ask-question.server");
           const result = await askQuestion({
