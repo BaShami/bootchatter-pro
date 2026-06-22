@@ -329,6 +329,10 @@ function BootcampDetail() {
           <BootcampKnowledgeBaseCard bootcampId={id!} />
         </div>
       </div>
+
+      <div className="mt-6">
+        <KnowledgeBaseCard bootcampId={id!} />
+      </div>
     </div>
   );
 }
