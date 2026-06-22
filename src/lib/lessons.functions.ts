@@ -185,6 +185,9 @@ export const setLessonPublished = createServerFn({ method: "POST" })
         .eq("id", lesson.id);
       if (upErr) throw new Error(upErr.message);
 
+      const { fireLessonPublishedWebhook } = await import("@/lib/lesson-published-webhook.server");
+      void fireLessonPublishedWebhook(lesson.id, lesson.bootcamp_id);
+
       // Upload+attach but do NOT poll-to-ready here. Indexing finishes in the
       // background; the UI polls refreshLessonSyncStatus for completion. This
       // keeps the publish click responsive (typically a few seconds).

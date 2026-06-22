@@ -681,6 +681,70 @@ export type Database = {
           },
         ]
       }
+      quiz_sessions: {
+        Row: {
+          answers: Json
+          bootcamp_id: string
+          created_at: string
+          current_question: number
+          id: string
+          lesson_id: string
+          questions: Json
+          score: number | null
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          answers?: Json
+          bootcamp_id: string
+          created_at?: string
+          current_question?: number
+          id?: string
+          lesson_id: string
+          questions: Json
+          score?: number | null
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          answers?: Json
+          bootcamp_id?: string
+          created_at?: string
+          current_question?: number
+          id?: string
+          lesson_id?: string
+          questions?: Json
+          score?: number | null
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "quiz_sessions_bootcamp_id_fkey"
+            columns: ["bootcamp_id"]
+            isOneToOne: false
+            referencedRelation: "bootcamps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_sessions_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "quiz_sessions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teacher_history: {
         Row: {
           action: string

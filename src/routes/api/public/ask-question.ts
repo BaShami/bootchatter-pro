@@ -6,7 +6,7 @@ const BodySchema = z.object({
     .string()
     .trim()
     .regex(/^\+[1-9]\d{6,14}$/, "phone_number must be E.164 format, e.g. +14155551234"),
-  question: z.string().trim().min(2).max(2000),
+  question: z.string().trim().min(1).max(2000),
   external_message_id: z.string().trim().max(200).optional(),
 });
 
@@ -15,6 +15,48 @@ function json(status: number, body: unknown) {
     status,
     headers: { "content-type": "application/json" },
   });
+}
+
+type QuizQuestion = { question: string; options: string[]; correct: string };
+
+function formatQuestion(q: { question: string; options: string[] }, num: number): string {
+  return `Question ${num} of 3:\n\n${q.question}\n\n${q.options.join("\n")}\n\nReply A, B or C`;
+}
+
+async function generateQuizQuestions(lesson: {
+  title: string;
+  summary: string | null;
+  learning_objectives: string | null;
+}): Promise<QuizQuestion[] | null> {
+  const { openaiChat } = await import("@/lib/openai.server");
+  const raw = await openaiChat({
+    system:
+      "You generate multiple choice quiz questions for bootcamp students. Respond with strict JSON only, no markdown.",
+    user: `Based on this lesson, generate exactly 3 quiz questions as a JSON array. Each object must have: question (string), options (array of exactly 3 strings, each starting with 'A. ', 'B. ', 'C. '), correct (string, either 'A', 'B', or 'C'). Lesson title: ${lesson.title}. Summary: ${lesson.summary ?? ""}. Learning objectives: ${lesson.learning_objectives ?? ""}`,
+  });
+  try {
+    const parsed = JSON.parse(raw) as QuizQuestion[] | { questions: QuizQuestion[] };
+    const questions = Array.isArray(parsed) ? parsed : parsed.questions;
+    if (!Array.isArray(questions) || questions.length === 0) return null;
+    return questions;
+  } catch (e) {
+    console.error("[generateQuizQuestions] parse failed:", e);
+    return null;
+  }
+}
+
+function formatQuizResults(
+  score: number,
+  answers: { question_index: number; correct: boolean }[],
+): string {
+  const lines = answers.map(
+    (a) => `${a.correct ? "✅" : "❌"} Q${a.question_index + 1}`,
+  );
+  const encouragement =
+    score < 2
+      ? "We recommend revisiting today's lesson before the next one."
+      : "Great work! Keep it up.";
+  return `You scored ${score}/3 🎉\n\n${lines.join("\n")}\n\n${encouragement}\n\nAny questions about the lesson? Just ask 👇`;
 }
 
 // Simple in-memory sliding-window rate limit (single-instance deployment).
@@ -110,6 +152,121 @@ export const Route = createFileRoute("/api/public/ask-question")({
             error: "Student not active",
             message: "Your enrollment is not active. Please contact your instructor.",
           });
+        }
+
+        const trimmed = body.question.trim();
+        const upper = trimmed.toUpperCase();
+
+        if (upper === "QUIZ") {
+          const { data: lesson } = await supabaseAdmin
+            .from("lessons")
+            .select("id, title, summary, learning_objectives")
+            .eq("bootcamp_id", student.bootcamp_id)
+            .eq("status", "published")
+            .order("published_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (!lesson) {
+            return json(200, { answer: "No lessons are available yet. Check back soon!" });
+          }
+
+          const questions = await generateQuizQuestions(lesson);
+          if (!questions) {
+            return json(200, {
+              answer: "Sorry, we couldn't generate a quiz right now. Please try again later.",
+            });
+          }
+
+          const { data: existing } = await supabaseAdmin
+            .from("quiz_sessions")
+            .select("id, questions, current_question")
+            .eq("student_id", student.id)
+            .eq("lesson_id", lesson.id)
+            .eq("status", "active")
+            .maybeSingle();
+
+          if (existing) {
+            const q = (existing.questions as QuizQuestion[])[existing.current_question];
+            return json(200, {
+              answer: formatQuestion(q, existing.current_question + 1),
+            });
+          }
+
+          const { error: insertErr } = await supabaseAdmin.from("quiz_sessions").insert({
+            student_id: student.id,
+            lesson_id: lesson.id,
+            bootcamp_id: student.bootcamp_id,
+            questions,
+            answers: [],
+            current_question: 0,
+            status: "active",
+          });
+
+          if (insertErr) {
+            console.error("[ask-question] quiz session insert failed:", insertErr);
+            return json(200, {
+              answer: "Sorry, we couldn't start a quiz right now. Please try again later.",
+            });
+          }
+
+          return json(200, { answer: formatQuestion(questions[0], 1) });
+        }
+
+        if (/^[ABC]$/.test(upper)) {
+          const { data: session } = await supabaseAdmin
+            .from("quiz_sessions")
+            .select("id, questions, answers, current_question")
+            .eq("student_id", student.id)
+            .eq("status", "active")
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (session) {
+            const sessionQuestions = session.questions as QuizQuestion[];
+            const currentQ = sessionQuestions[session.current_question];
+            const correct = upper === currentQ.correct;
+            const sessionAnswers = (session.answers ?? []) as {
+              question_index: number;
+              answer: string;
+              correct: boolean;
+            }[];
+            const updatedAnswers = [
+              ...sessionAnswers,
+              {
+                question_index: session.current_question,
+                answer: upper,
+                correct,
+              },
+            ];
+
+            const nextIndex = session.current_question + 1;
+            if (nextIndex < sessionQuestions.length) {
+              await supabaseAdmin
+                .from("quiz_sessions")
+                .update({ current_question: nextIndex, answers: updatedAnswers })
+                .eq("id", session.id);
+
+              const feedback = correct ? "✅ Correct!\n\n" : "❌ Not quite.\n\n";
+              return json(200, {
+                answer:
+                  feedback + formatQuestion(sessionQuestions[nextIndex], nextIndex + 1),
+              });
+            }
+
+            const score = updatedAnswers.filter((a) => a.correct).length;
+            await supabaseAdmin
+              .from("quiz_sessions")
+              .update({
+                status: "completed",
+                score,
+                answers: updatedAnswers,
+              })
+              .eq("id", session.id);
+
+            return json(200, { answer: formatQuizResults(score, updatedAnswers) });
+          }
         }
 
         try {
