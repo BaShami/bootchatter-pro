@@ -44,6 +44,17 @@ type AnalyticsRow = {
   students: { first_name: string | null; last_name: string | null } | null;
 };
 
+type QuizSessionRow = {
+  id: string;
+  student_id: string;
+  lesson_id: string;
+  bootcamp_id: string;
+  score: number | null;
+  created_at: string;
+  lessons: { title: string | null } | null;
+  students: { first_name: string | null; last_name: string | null } | null;
+};
+
 function AnalyticsPage() {
   const { data: perms } = usePermissions();
   const { data: bootcamps, isLoading: bcLoading } = useBootcamps();
@@ -94,6 +105,25 @@ function AnalyticsPage() {
         .limit(2000);
       if (error) throw error;
       return (data ?? []) as unknown as AnalyticsRow[];
+    },
+  });
+
+  const quizSessions = useQuery({
+    queryKey: ["analytics", "quiz-sessions", accessibleIds],
+    enabled: accessibleIds.length > 0,
+    queryFn: async (): Promise<QuizSessionRow[]> => {
+      const { data, error } = await supabase
+        .from("quiz_sessions")
+        .select(
+          "id, student_id, lesson_id, bootcamp_id, score, created_at, lessons(title), students(first_name, last_name)",
+        )
+        .in("bootcamp_id", accessibleIds)
+        .eq("status", "completed")
+        .gte("created_at", since30)
+        .order("created_at", { ascending: false })
+        .limit(2000);
+      if (error) throw error;
+      return (data ?? []) as unknown as QuizSessionRow[];
     },
   });
 
@@ -157,6 +187,53 @@ function AnalyticsPage() {
   // ---- Fallback table ----
   const fallbackRows = (monthly.data ?? []).filter((q) => q.retrieval_method === "fallback");
 
+  // ---- Quiz trends ----
+  const quizRows = quizSessions.data ?? [];
+  const totalQuizzesCompleted = quizRows.length;
+  const avgQuizScore =
+    totalQuizzesCompleted > 0
+      ? quizRows.reduce((s, q) => s + Number(q.score ?? 0), 0) / totalQuizzesCompleted
+      : 0;
+
+  const latestQuizByStudent = useMemo(() => {
+    const map = new Map<string, QuizSessionRow>();
+    quizRows.forEach((row) => {
+      const existing = map.get(row.student_id);
+      if (!existing || row.created_at > existing.created_at) {
+        map.set(row.student_id, row);
+      }
+    });
+    return map;
+  }, [quizRows]);
+
+  const strugglingStudents = useMemo(() => {
+    return Array.from(latestQuizByStudent.values())
+      .filter((r) => r.score != null && r.score < 2)
+      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+  }, [latestQuizByStudent]);
+
+  const strugglingRate =
+    latestQuizByStudent.size > 0
+      ? (strugglingStudents.length / latestQuizByStudent.size) * 100
+      : 0;
+
+  const quizByLessonData = useMemo(() => {
+    const scores = new Map<string, { total: number; count: number; title: string }>();
+    quizRows.forEach((row) => {
+      const title = row.lessons?.title ?? "Untitled";
+      const entry = scores.get(row.lesson_id) ?? { total: 0, count: 0, title };
+      entry.total += Number(row.score ?? 0);
+      entry.count += 1;
+      scores.set(row.lesson_id, entry);
+    });
+    return Array.from(scores.entries())
+      .map(([id, { total, count, title }]) => {
+        const truncated = title.length > 30 ? title.slice(0, 30) + "…" : title;
+        return { id, title: truncated, avgScore: total / count };
+      })
+      .sort((a, b) => b.avgScore - a.avgScore);
+  }, [quizRows]);
+
   // ---- Questions over time (last 30d) ----
   const timeSeries = useMemo(() => {
     const map = new Map<string, number>();
@@ -186,6 +263,7 @@ function AnalyticsPage() {
   }
 
   const loading = weekly.isLoading || monthly.isLoading;
+  const quizLoading = quizSessions.isLoading;
 
   return (
     <div>
@@ -292,6 +370,120 @@ function AnalyticsPage() {
           )}
         </CardContent>
       </Card>
+
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold mb-4">Quiz trends</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <StatCard
+            label="Quizzes completed (30 days)"
+            value={quizLoading ? "…" : totalQuizzesCompleted.toString()}
+          />
+          <StatCard
+            label="Average score"
+            value={quizLoading ? "…" : `${avgQuizScore.toFixed(1)} / 3`}
+          />
+          <StatCard
+            label="Struggling rate"
+            value={quizLoading ? "…" : `${strugglingRate.toFixed(1)}%`}
+            hint="Students scoring below 2 on latest quiz"
+          />
+        </div>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">Quiz performance by lesson</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {quizLoading ? (
+              <Skeleton className="h-64 w-full" />
+            ) : quizByLessonData.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No completed quizzes yet.</p>
+            ) : (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart
+                  data={quizByLessonData}
+                  layout="vertical"
+                  margin={{ left: 120, right: 30, top: 10, bottom: 10 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis
+                    type="number"
+                    domain={[0, 3]}
+                    allowDecimals={true}
+                    stroke="hsl(var(--muted-foreground))"
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="title"
+                    width={110}
+                    stroke="hsl(var(--muted-foreground))"
+                    fontSize={12}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "0.5rem",
+                    }}
+                    formatter={(value: number) => [`${value.toFixed(1)} / 3`, "Avg score"]}
+                  />
+                  <Bar dataKey="avgScore" fill="#3b82f6" barSize={20} radius={[0, 4, 4, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="text-base">Struggling students</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {quizLoading ? (
+              <div className="p-6">
+                <Skeleton className="h-32 w-full" />
+              </div>
+            ) : strugglingStudents.length === 0 ? (
+              <div className="p-10 text-center text-sm text-muted-foreground">
+                Great — no students are struggling on their latest quiz.
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Student</TableHead>
+                    <TableHead>Lesson</TableHead>
+                    <TableHead>Score</TableHead>
+                    <TableHead>Date</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {strugglingStudents.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="text-sm">
+                        {row.students
+                          ? `${row.students.first_name ?? ""} ${row.students.last_name ?? ""}`.trim() ||
+                            "—"
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {row.lessons?.title ?? "—"}
+                      </TableCell>
+                      <TableCell className="text-sm tabular-nums">
+                        {row.score ?? "—"} / 3
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        {formatDate(row.created_at)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
       <Card>
         <CardHeader>
