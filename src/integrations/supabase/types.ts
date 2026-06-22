@@ -298,6 +298,67 @@ export type Database = {
         }
         Relationships: []
       }
+      escalations: {
+        Row: {
+          bootcamp_id: string
+          created_at: string
+          id: string
+          question_id: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: string
+          student_id: string
+          summary: string | null
+          updated_at: string
+        }
+        Insert: {
+          bootcamp_id: string
+          created_at?: string
+          id?: string
+          question_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          student_id: string
+          summary?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bootcamp_id?: string
+          created_at?: string
+          id?: string
+          question_id?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: string
+          student_id?: string
+          summary?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escalations_bootcamp_id_fkey"
+            columns: ["bootcamp_id"]
+            isOneToOne: false
+            referencedRelation: "bootcamps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escalations_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escalations_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invites: {
         Row: {
           accepted_at: string | null
