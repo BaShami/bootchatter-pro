@@ -1,5 +1,17 @@
 import mammoth from "mammoth";
-import pdfParse from "pdf-parse";
+
+async function extractPdfText(buffer: Buffer): Promise<string> {
+  const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const data = new Uint8Array(buffer);
+  const doc = await pdfjs.getDocument({ data, useWorkerFetch: false, disableWorker: true } as Parameters<typeof pdfjs.getDocument>[0]).promise;
+  const parts: string[] = [];
+  for (let p = 1; p <= doc.numPages; p++) {
+    const page = await doc.getPage(p);
+    const content = await page.getTextContent();
+    parts.push(content.items.map((it) => ("str" in it ? (it as { str: string }).str : "")).join(" "));
+  }
+  return parts.join("\n\n");
+}
 
 const MAX_EXTRACTED_CHARS = 20_000;
 
@@ -40,8 +52,7 @@ export async function extractKbArticleText(articleId: string) {
     if (fileType === "text/plain" || fileType === "text/markdown" || ext === "txt" || ext === "md") {
       extracted = buffer.toString("utf-8");
     } else if (fileType === "application/pdf" || ext === "pdf") {
-      const parsed = await pdfParse(buffer);
-      extracted = parsed.text;
+      extracted = await extractPdfText(buffer);
     } else if (
       fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
       ext === "docx"
