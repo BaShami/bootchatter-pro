@@ -469,6 +469,10 @@ function LessonDetail() {
           </Card>
         </div>
       </div>
+
+      <div className="mt-8">
+        <QuizResultsCard lessonId={id} />
+      </div>
     </div>
   );
 }
