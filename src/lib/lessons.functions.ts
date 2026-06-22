@@ -258,27 +258,6 @@ export const refreshLessonSyncStatus = createServerFn({ method: "POST" })
 
 const FileIdInput = z.object({ file_id: z.string().uuid() });
 
-async function assertFileTeacher(
-  supabase: ReturnType<typeof requireSupabaseAuth> extends never
-    ? never
-    : Awaited<ReturnType<typeof requireSupabaseAuth.client>>["context"]["supabase"],
-  userId: string,
-  fileId: string,
-) {
-  const { data: file, error } = await supabase
-    .from("lesson_files")
-    .select("id, bootcamp_id")
-    .eq("id", fileId)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!file) throw new Error("File not found");
-  const { data: ok } = await supabase.rpc("is_bootcamp_teacher", {
-    _user_id: userId,
-    _bootcamp_id: file.bootcamp_id,
-  });
-  if (!ok) throw new Error("Forbidden");
-  return file;
-}
 
 export const softDeleteLessonFile = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
