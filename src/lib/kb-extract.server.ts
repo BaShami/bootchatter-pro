@@ -5,7 +5,7 @@ const MAX_EXTRACTED_CHARS = 20_000;
 
 async function extractPdfText(buffer: Buffer) {
   const data = new Uint8Array(buffer);
-  const doc = await getDocument({ data, disableWorker: true }).promise;
+  const doc = await getDocument({ data }).promise;
   const parts: string[] = [];
 
   for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber++) {
