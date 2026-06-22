@@ -3,7 +3,7 @@ import mammoth from "mammoth";
 async function extractPdfText(buffer: Buffer): Promise<string> {
   const pdfjs = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const data = new Uint8Array(buffer);
-  const doc = await pdfjs.getDocument({ data, isEvalSupported: false, useWorkerFetch: false, disableWorker: true }).promise;
+  const doc = await pdfjs.getDocument({ data, useWorkerFetch: false, disableWorker: true } as Parameters<typeof pdfjs.getDocument>[0]).promise;
   const parts: string[] = [];
   for (let p = 1; p <= doc.numPages; p++) {
     const page = await doc.getPage(p);
