@@ -208,6 +208,7 @@ function EscalationDetail({
       toast.success("Escalation marked as resolved");
       qc.invalidateQueries({ queryKey: ["escalations"] });
       qc.invalidateQueries({ queryKey: ["open-escalations-count"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-stats"] });
       onClose();
     },
     onError: (e: Error) => toast.error(e.message),
