@@ -679,34 +679,94 @@ function ImportCsvDialog({
 
   const importMut = useMutation({
     mutationFn: async (rows: CsvPreviewRow[]) => {
-      let ok = 0;
+      let added = 0;
+      let updated = 0;
+      let transferred = 0;
       let fail = 0;
+
       for (const row of rows) {
+        const studentFields = {
+          first_name: row.first_name,
+          last_name: row.last_name || null,
+          email: row.email || null,
+          consent_status: row.consent_status,
+          enrollment_status: "active" as const,
+        };
+
+        const { data: sameBootcamp, error: sameErr } = await supabase
+          .from("students")
+          .select("id")
+          .eq("phone_number", row.phone_number)
+          .eq("bootcamp_id", bootcampId)
+          .maybeSingle();
+
+        if (sameErr) {
+          fail++;
+          continue;
+        }
+
+        if (sameBootcamp) {
+          const { error } = await supabase
+            .from("students")
+            .update(studentFields)
+            .eq("id", sameBootcamp.id);
+          if (error) fail++;
+          else updated++;
+          continue;
+        }
+
+        const { data: otherBootcamps, error: otherErr } = await supabase
+          .from("students")
+          .select("id")
+          .eq("phone_number", row.phone_number)
+          .neq("bootcamp_id", bootcampId);
+
+        if (otherErr) {
+          fail++;
+          continue;
+        }
+
+        if (otherBootcamps && otherBootcamps.length > 0) {
+          const { error: transferErr } = await supabase
+            .from("students")
+            .update({ enrollment_status: "completed" })
+            .eq("phone_number", row.phone_number)
+            .neq("bootcamp_id", bootcampId);
+          if (transferErr) {
+            fail++;
+            continue;
+          }
+          transferred++;
+        }
+
         const { data: inserted, error } = await supabase
           .from("students")
           .insert({
             bootcamp_id: bootcampId,
-            first_name: row.first_name,
-            last_name: row.last_name || null,
-            email: row.email || null,
+            ...studentFields,
             phone_number: row.phone_number,
-            consent_status: row.consent_status,
-            enrollment_status: "active",
             enrolled_at: new Date().toISOString(),
           })
           .select("id")
           .single();
+
         if (error) {
           fail++;
         } else {
-          ok++;
+          added++;
           void triggerOnboarding({ data: { student_id: inserted.id } });
         }
       }
-      return { ok, fail };
+
+      return { added, updated, transferred, fail };
     },
-    onSuccess: ({ ok, fail }) => {
-      toast.success(`Imported ${ok} students${fail ? `, ${fail} failed` : ""}`);
+    onSuccess: ({ added, updated, transferred, fail }) => {
+      const parts: string[] = [];
+      if (added > 0) parts.push(`${added} added`);
+      if (transferred > 0) parts.push(`${transferred} transferred from another bootcamp`);
+      if (updated > 0) parts.push(`${updated} updated`);
+      if (fail > 0) parts.push(`${fail} failed`);
+      toast.success(parts.length > 0 ? parts.join(", ") : "Import complete");
       qc.invalidateQueries({ queryKey: ["students"] });
       setOpen(false);
       setPreview([]);
