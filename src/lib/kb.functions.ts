@@ -89,8 +89,15 @@ export const uploadKbArticle = createServerFn({ method: "POST" })
       throw new Error(insErr.message);
     }
 
+    console.log("[uploadKbArticle] insert succeeded, triggering extraction", {
+      articleId,
+      bootcampId: data.bootcamp_id,
+      filePath: path,
+      fileType: data.file_type || "application/octet-stream",
+    });
+
     const { triggerKbExtraction } = await import("@/lib/kb-extract-trigger.server");
-    void triggerKbExtraction(articleId);
+    await triggerKbExtraction(articleId);
 
     return { id: articleId };
   });
@@ -139,4 +146,34 @@ export const listKbArticles = createServerFn({ method: "POST" })
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return rows ?? [];
+  });
+
+export const retriggerKbArticleExtraction = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => IdInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: row } = await supabase
+      .from("kb_articles")
+      .select("id, bootcamp_id")
+      .eq("id", data.article_id)
+      .maybeSingle();
+    if (!row) throw new Error("Article not found");
+
+    const { data: isAdmin } = await supabase.rpc("is_bootcamp_admin", {
+      _user_id: userId,
+      _bootcamp_id: row.bootcamp_id,
+    });
+    if (!isAdmin) throw new Error("Forbidden");
+
+    console.log("[retriggerKbArticleExtraction] manual retrigger", {
+      articleId: data.article_id,
+      bootcampId: row.bootcamp_id,
+      userId,
+    });
+
+    const { extractKbArticleText } = await import("@/lib/kb-extract.server");
+    await extractKbArticleText(data.article_id);
+
+    return { ok: true, article_id: data.article_id };
   });

@@ -1,27 +1,21 @@
 import mammoth from "mammoth";
-import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 
 const MAX_EXTRACTED_CHARS = 20_000;
 
-async function extractPdfText(buffer: Buffer) {
-  const data = new Uint8Array(buffer);
-  const doc = await getDocument({ data }).promise;
-  const parts: string[] = [];
-
-  for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber++) {
-    const page = await doc.getPage(pageNumber);
-    const content = await page.getTextContent();
-    parts.push(
-      content.items
-        .map((item) => ("str" in item ? item.str : ""))
-        .join(" "),
-    );
+async function extractPdfText(buffer: Buffer): Promise<string> {
+  const { PDFParse } = await import("pdf-parse");
+  const parser = new PDFParse({ data: buffer });
+  try {
+    const result = await parser.getText();
+    return result.text;
+  } finally {
+    await parser.destroy();
   }
-
-  return parts.join("\n\n");
 }
 
 export async function extractKbArticleText(articleId: string) {
+  console.log("[extractKbArticleText] start", { articleId });
+
   try {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -40,6 +34,13 @@ export async function extractKbArticleText(articleId: string) {
       return;
     }
 
+    console.log("[extractKbArticleText] article fetched", {
+      articleId: article.id,
+      bootcampId: article.bootcamp_id,
+      filePath: article.file_path,
+      fileType: article.file_type,
+    });
+
     const { data: fileData, error: downloadError } = await supabaseAdmin.storage
       .from("kb-files")
       .download(article.file_path);
@@ -53,20 +54,44 @@ export async function extractKbArticleText(articleId: string) {
     const fileType = article.file_type.toLowerCase();
     const ext = article.file_path.split(".").pop()?.toLowerCase() ?? "";
 
+    console.log("[extractKbArticleText] file downloaded", {
+      articleId,
+      byteLength: buffer.byteLength,
+      fileType,
+      ext,
+    });
+
     let extracted = "";
 
     if (fileType === "text/plain" || fileType === "text/markdown" || ext === "txt" || ext === "md") {
       extracted = buffer.toString("utf-8");
+      console.log("[extractKbArticleText] extracted as plain text", {
+        articleId,
+        charLength: extracted.length,
+      });
     } else if (fileType === "application/pdf" || ext === "pdf") {
       extracted = await extractPdfText(buffer);
+      console.log("[extractKbArticleText] extracted as pdf", {
+        articleId,
+        charLength: extracted.length,
+      });
     } else if (
       fileType === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
       ext === "docx"
     ) {
+      console.log("[extractKbArticleText] extracting docx with mammoth", { articleId });
       const { value } = await mammoth.extractRawText({ buffer });
       extracted = value;
+      console.log("[extractKbArticleText] extracted as docx", {
+        articleId,
+        charLength: extracted.length,
+      });
     } else {
-      console.error("[extractKbArticleText] unsupported file type:", article.file_type);
+      console.error("[extractKbArticleText] unsupported file type:", {
+        articleId,
+        fileType: article.file_type,
+        ext,
+      });
       return;
     }
 
@@ -75,14 +100,29 @@ export async function extractKbArticleText(articleId: string) {
         ? extracted.slice(0, MAX_EXTRACTED_CHARS)
         : extracted;
 
-    const { error: updateError } = await supabaseAdmin
+    console.log("[extractKbArticleText] updating extracted_text", {
+      articleId,
+      originalLength: extracted.length,
+      storedLength: truncated.length,
+    });
+
+    const { data: updated, error: updateError } = await supabaseAdmin
       .from("kb_articles")
       .update({ extracted_text: truncated })
-      .eq("id", articleId);
+      .eq("id", articleId)
+      .select("id, extracted_text")
+      .maybeSingle();
 
     if (updateError) {
       console.error("[extractKbArticleText] update failed:", updateError);
+      return;
     }
+
+    console.log("[extractKbArticleText] update complete", {
+      articleId,
+      hasExtractedText: Boolean(updated?.extracted_text?.length),
+      extractedTextLength: updated?.extracted_text?.length ?? 0,
+    });
   } catch (e) {
     console.error("[extractKbArticleText] error:", e);
   }
