@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { GraduationCap, Users, BookOpen, MessageSquare, TrendingUp, AlertCircle } from "lucide-react";
+import { GraduationCap, Users, BookOpen, MessageSquare, TrendingUp, AlertCircle, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { usePermissions } from "@/hooks/use-auth";
 import { TeacherDashboard } from "@/components/teacher-dashboard";
