@@ -40,6 +40,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { formatDate } from "@/lib/format";
 import { LessonSyncCard } from "@/components/lesson-sync-card";
+import { LessonFilesCard } from "@/components/lesson-files-card";
 import { QuizResultsCard } from "@/components/quiz-results-card";
 
 
