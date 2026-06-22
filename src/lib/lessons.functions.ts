@@ -353,16 +353,15 @@ export const softDeleteLesson = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
-async function requirePlatformAdmin(
-  supabase: ReturnType<typeof Object> extends never ? never : any,
-  userId: string,
-) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function requirePlatformAdmin(supabase: any, userId: string) {
   const { data: isAdmin } = await supabase.rpc("has_role", {
     _user_id: userId,
     _role: "platform_admin",
   });
   if (!isAdmin) throw new Error("Forbidden: platform admin only");
 }
+
 
 /** Platform admin: restore a soft-deleted lesson (stays unpublished). */
 export const restoreLesson = createServerFn({ method: "POST" })
