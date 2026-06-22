@@ -35,6 +35,7 @@ const adminNavItems: NavItem[] = [
   { to: "/lessons/test-brain", label: "Test AI brain", icon: Sparkles },
   { to: "/announcements", label: "Announcements", icon: Megaphone },
   { to: "/questions", label: "Questions", icon: MessageSquare },
+  { to: "/escalations", label: "Escalations", icon: AlertTriangle },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/settings", label: "Settings", icon: Settings, disabled: true },
 ];
