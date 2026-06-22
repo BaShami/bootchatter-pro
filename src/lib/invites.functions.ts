@@ -159,35 +159,12 @@ export const acceptInvite = createServerFn({ method: "POST" })
         throw new Error(createError?.message ?? "Could not create account");
       }
 
-      const { data: profile, error: profileLookupError } = await supabaseAdmin
-        .from("profiles")
-        .select("id")
-        .eq("email", inviteEmail)
-        .maybeSingle();
-      if (profileLookupError) {
-        console.error("[acceptInvite] profile lookup failed:", profileLookupError);
-        throw new Error(profileLookupError.message);
-      }
-      if (!profile) {
-        throw new Error("An account with this email already exists. Sign in instead.");
-      }
-
-      newUserId = profile.id;
-      const { error: updateUserError } = await supabaseAdmin.auth.admin.updateUserById(
-        newUserId,
-        {
-          password: data.password,
-          email_confirm: true,
-          user_metadata: {
-            first_name: data.first_name,
-            last_name: data.last_name,
-          },
-        },
+      // SECURITY: an attacker who obtains an invite link for an existing email
+      // must NOT be able to reset that user's password. Refuse instead, and
+      // direct them to sign in (or use the normal password reset flow).
+      throw new Error(
+        "An account with this email already exists. Please sign in instead — if you have been added to a new bootcamp, it will appear once you sign in.",
       );
-      if (updateUserError) {
-        console.error("[acceptInvite] updateUserById failed:", updateUserError);
-        throw new Error(updateUserError.message);
-      }
     }
 
     // The handle_new_user trigger creates the profile; ensure first/last name are set.
