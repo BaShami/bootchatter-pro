@@ -164,17 +164,19 @@ function LessonDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const softDeleteFn = useServerFn(softDeleteLesson);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const remove = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("lessons").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: async () => softDeleteFn({ data: { lesson_id: id } }),
     onSuccess: () => {
-      toast.success("Lesson deleted");
+      toast.success("Lesson moved to recycle bin");
+      qc.invalidateQueries({ queryKey: ["lessons"] });
+      setDeleteOpen(false);
       navigate({ to: "/lessons" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   if (isLoading) {
     return (
