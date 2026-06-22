@@ -203,11 +203,11 @@ export type Database = {
           full_text_result_limit: number
           id: string
           make_webhook_url: string | null
-          student_onboarding_webhook_url: string | null
           max_answer_length: number | null
           minimum_similarity: number | null
           openai_vector_store_id: string | null
           retrieval_limit: number | null
+          student_onboarding_webhook_url: string | null
           updated_at: string
           vector_store_status: string
         }
@@ -222,11 +222,11 @@ export type Database = {
           full_text_result_limit?: number
           id?: string
           make_webhook_url?: string | null
-          student_onboarding_webhook_url?: string | null
           max_answer_length?: number | null
           minimum_similarity?: number | null
           openai_vector_store_id?: string | null
           retrieval_limit?: number | null
+          student_onboarding_webhook_url?: string | null
           updated_at?: string
           vector_store_status?: string
         }
@@ -241,11 +241,11 @@ export type Database = {
           full_text_result_limit?: number
           id?: string
           make_webhook_url?: string | null
-          student_onboarding_webhook_url?: string | null
           max_answer_length?: number | null
           minimum_similarity?: number | null
           openai_vector_store_id?: string | null
           retrieval_limit?: number | null
+          student_onboarding_webhook_url?: string | null
           updated_at?: string
           vector_store_status?: string
         }
@@ -745,45 +745,6 @@ export type Database = {
           },
         ]
       }
-      teacher_history: {
-        Row: {
-          action: string
-          actioned_at: string
-          actioned_by: string | null
-          bootcamp_id: string
-          email: string | null
-          first_name: string | null
-          id: string
-          last_name: string | null
-          role: Database["public"]["Enums"]["bootcamp_role"]
-          user_id: string | null
-        }
-        Insert: {
-          action: string
-          actioned_at?: string
-          actioned_by?: string | null
-          bootcamp_id: string
-          email?: string | null
-          first_name?: string | null
-          id?: string
-          last_name?: string | null
-          role: Database["public"]["Enums"]["bootcamp_role"]
-          user_id?: string | null
-        }
-        Update: {
-          action?: string
-          actioned_at?: string
-          actioned_by?: string | null
-          bootcamp_id?: string
-          email?: string | null
-          first_name?: string | null
-          id?: string
-          last_name?: string | null
-          role?: Database["public"]["Enums"]["bootcamp_role"]
-          user_id?: string | null
-        }
-        Relationships: []
-      }
       students: {
         Row: {
           bootcamp_id: string
@@ -836,6 +797,53 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "students_bootcamp_id_fkey"
+            columns: ["bootcamp_id"]
+            isOneToOne: false
+            referencedRelation: "bootcamps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_history: {
+        Row: {
+          action: string
+          actioned_at: string
+          actioned_by: string | null
+          bootcamp_id: string
+          email: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          role: Database["public"]["Enums"]["bootcamp_role"]
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          actioned_at?: string
+          actioned_by?: string | null
+          bootcamp_id: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          role: Database["public"]["Enums"]["bootcamp_role"]
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          actioned_at?: string
+          actioned_by?: string | null
+          bootcamp_id?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          role?: Database["public"]["Enums"]["bootcamp_role"]
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_history_bootcamp_id_fkey"
             columns: ["bootcamp_id"]
             isOneToOne: false
             referencedRelation: "bootcamps"
