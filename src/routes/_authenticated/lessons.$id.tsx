@@ -398,22 +398,13 @@ function LessonDetail() {
             </CardContent>
           </Card>
 
-          <div className="flex items-center justify-between gap-2">
-            <Button
-              variant="ghost"
-              className="text-destructive hover:text-destructive"
-              onClick={() => {
-                if (confirm("Delete this lesson permanently? Its chunks and files will also be removed."))
-                  remove.mutate();
-              }}
-            >
-              <Trash2 className="h-4 w-4 mr-1.5" /> Delete lesson
-            </Button>
+          <div className="flex items-center justify-end gap-2">
             <Button onClick={() => save.mutate()} disabled={save.isPending}>
               <Save className="h-4 w-4 mr-1.5" />
               {save.isPending ? "Saving…" : "Save changes"}
             </Button>
           </div>
+
         </div>
 
         <div className="space-y-6">
