@@ -113,7 +113,8 @@ function AnalyticsPage() {
       const { data, error } = await supabase
         .from("lessons")
         .select("id, title")
-        .in("id", lessonIdsNeeded);
+        .in("id", lessonIdsNeeded)
+        .is("deleted_at", null);
       if (error) throw error;
       const m = new Map<string, string>();
       (data ?? []).forEach((l) => m.set(l.id as string, (l.title as string) ?? "Untitled"));

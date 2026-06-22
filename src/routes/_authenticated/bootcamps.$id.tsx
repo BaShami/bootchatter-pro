@@ -88,7 +88,7 @@ function BootcampDetail() {
     queryFn: async () => {
       const [{ count: students }, { count: lessons }, { count: questions }] = await Promise.all([
         supabase.from("students").select("id", { count: "exact", head: true }).eq("bootcamp_id", id!),
-        supabase.from("lessons").select("id", { count: "exact", head: true }).eq("bootcamp_id", id!),
+        supabase.from("lessons").select("id", { count: "exact", head: true }).eq("bootcamp_id", id!).is("deleted_at", null),
         supabase.from("questions").select("id", { count: "exact", head: true }).eq("bootcamp_id", id!),
       ]);
       return { students: students ?? 0, lessons: lessons ?? 0, questions: questions ?? 0 };

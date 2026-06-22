@@ -19,7 +19,15 @@ import {
   useLesson,
   useLessonChunkCount,
 } from "@/hooks/use-lessons";
-import { processLesson, setLessonPublished } from "@/lib/lessons.functions";
+import { processLesson, setLessonPublished, softDeleteLesson } from "@/lib/lessons.functions";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
@@ -156,17 +164,19 @@ function LessonDetail() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const softDeleteFn = useServerFn(softDeleteLesson);
+  const [deleteOpen, setDeleteOpen] = useState(false);
   const remove = useMutation({
-    mutationFn: async () => {
-      const { error } = await supabase.from("lessons").delete().eq("id", id);
-      if (error) throw error;
-    },
+    mutationFn: async () => softDeleteFn({ data: { lesson_id: id } }),
     onSuccess: () => {
-      toast.success("Lesson deleted");
+      toast.success("Lesson moved to recycle bin");
+      qc.invalidateQueries({ queryKey: ["lessons"] });
+      setDeleteOpen(false);
       navigate({ to: "/lessons" });
     },
     onError: (e: Error) => toast.error(e.message),
   });
+
 
   if (isLoading) {
     return (
@@ -225,9 +235,41 @@ function LessonDetail() {
                 <Eye className="h-4 w-4 mr-1.5" /> Publish
               </Button>
             )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" /> Delete lesson
+            </Button>
           </div>
         }
       />
+
+      <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete this lesson?</DialogTitle>
+            <DialogDescription>
+              This lesson will be moved to the recycle bin and unpublished if live. Continue?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteOpen(false)} disabled={remove.isPending}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => remove.mutate()}
+              disabled={remove.isPending}
+            >
+              {remove.isPending ? "Deleting…" : "Move to recycle bin"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
@@ -356,22 +398,13 @@ function LessonDetail() {
             </CardContent>
           </Card>
 
-          <div className="flex items-center justify-between gap-2">
-            <Button
-              variant="ghost"
-              className="text-destructive hover:text-destructive"
-              onClick={() => {
-                if (confirm("Delete this lesson permanently? Its chunks and files will also be removed."))
-                  remove.mutate();
-              }}
-            >
-              <Trash2 className="h-4 w-4 mr-1.5" /> Delete lesson
-            </Button>
+          <div className="flex items-center justify-end gap-2">
             <Button onClick={() => save.mutate()} disabled={save.isPending}>
               <Save className="h-4 w-4 mr-1.5" />
               {save.isPending ? "Saving…" : "Save changes"}
             </Button>
           </div>
+
         </div>
 
         <div className="space-y-6">

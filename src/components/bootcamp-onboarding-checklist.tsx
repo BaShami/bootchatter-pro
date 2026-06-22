@@ -47,7 +47,8 @@ export function BootcampOnboardingChecklist({ bootcampId }: { bootcampId: string
           .from("lessons")
           .select("id", { count: "exact", head: true })
           .eq("bootcamp_id", bootcampId)
-          .eq("status", "published"),
+          .eq("status", "published")
+          .is("deleted_at", null),
         supabase
           .from("bootcamp_settings")
           .select("make_webhook_url, student_onboarding_webhook_url")

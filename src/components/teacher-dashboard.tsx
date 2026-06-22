@@ -82,7 +82,8 @@ function TeacherBootcampCard({ id, name }: { id: string; name: string }) {
           .from("lessons")
           .select("id", { count: "exact", head: true })
           .eq("bootcamp_id", id)
-          .eq("status", "published"),
+          .eq("status", "published")
+          .is("deleted_at", null),
         supabase
           .from("students")
           .select("id", { count: "exact", head: true })

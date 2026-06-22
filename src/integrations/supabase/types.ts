@@ -457,6 +457,8 @@ export type Database = {
           content_hash: string | null
           created_at: string
           created_by: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           description: string | null
           id: string
           indexing_started_at: string | null
@@ -482,6 +484,8 @@ export type Database = {
           content_hash?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           id?: string
           indexing_started_at?: string | null
@@ -507,6 +511,8 @@ export type Database = {
           content_hash?: string | null
           created_at?: string
           created_by?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           description?: string | null
           id?: string
           indexing_started_at?: string | null
