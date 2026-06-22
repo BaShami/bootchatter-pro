@@ -47,7 +47,11 @@ export const requestPasswordReset = createServerFn({ method: "POST" })
       // We fire-and-forget so the response timing/shape doesn't reveal whether
       // an account exists or what role it has.
       try {
-        await supabaseAdmin.auth.resetPasswordForEmail(email);
+        const origin = process.env.PUBLIC_SITE_URL ?? process.env.SITE_URL;
+        await supabaseAdmin.auth.resetPasswordForEmail(
+          email,
+          origin ? { redirectTo: `${origin}/reset-password` } : undefined,
+        );
       } catch (err) {
         console.error("[requestPasswordReset] resetPasswordForEmail failed", err);
       }
