@@ -309,3 +309,158 @@ export const restoreLessonFile = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+// ---------------- Lesson soft-delete / recycle bin ----------------
+
+const LessonIdInput = z.object({ lesson_id: z.string().uuid() });
+
+/** Teacher soft-delete: unpublish (if live) then mark deleted_at. */
+export const softDeleteLesson = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => LessonIdInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    const { data: lesson } = await supabase
+      .from("lessons")
+      .select("id, bootcamp_id, status")
+      .eq("id", data.lesson_id)
+      .is("deleted_at", null)
+      .maybeSingle();
+    if (!lesson) throw new Error("Lesson not found");
+    const { data: ok } = await supabase.rpc("is_bootcamp_teacher", {
+      _user_id: userId,
+      _bootcamp_id: lesson.bootcamp_id,
+    });
+    if (!ok) throw new Error("Forbidden");
+
+    if (lesson.status === "published") {
+      const { unsyncLessonFromVectorStore } = await import("@/lib/lesson-sync.server");
+      try {
+        await unsyncLessonFromVectorStore(lesson.id);
+      } catch (e) {
+        console.warn("unsync on delete failed", e);
+      }
+      await supabase
+        .from("lessons")
+        .update({ status: "ready", published_at: null })
+        .eq("id", lesson.id);
+    }
+
+    const { error } = await supabase
+      .from("lessons")
+      .update({ deleted_at: new Date().toISOString(), deleted_by: userId })
+      .eq("id", lesson.id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+async function requirePlatformAdmin(
+  supabase: ReturnType<typeof Object> extends never ? never : any,
+  userId: string,
+) {
+  const { data: isAdmin } = await supabase.rpc("has_role", {
+    _user_id: userId,
+    _role: "platform_admin",
+  });
+  if (!isAdmin) throw new Error("Forbidden: platform admin only");
+}
+
+/** Platform admin: restore a soft-deleted lesson (stays unpublished). */
+export const restoreLesson = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => LessonIdInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await requirePlatformAdmin(supabase, userId);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin
+      .from("lessons")
+      .update({ deleted_at: null, deleted_by: null })
+      .eq("id", data.lesson_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Platform admin: hard-delete lesson row + storage files. */
+export const permanentlyDeleteLesson = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => LessonIdInput.parse(d))
+  .handler(async ({ data, context }) => {
+    const { supabase, userId } = context;
+    await requirePlatformAdmin(supabase, userId);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: files } = await supabaseAdmin
+      .from("lesson_files")
+      .select("storage_path")
+      .eq("lesson_id", data.lesson_id);
+    const paths = (files ?? []).map((f) => f.storage_path).filter(Boolean);
+    if (paths.length > 0) {
+      const { error: rmErr } = await supabaseAdmin.storage.from("lesson-files").remove(paths);
+      if (rmErr) console.warn("storage remove failed", rmErr);
+    }
+
+    try {
+      const { unsyncLessonFromVectorStore } = await import("@/lib/lesson-sync.server");
+      await unsyncLessonFromVectorStore(data.lesson_id);
+    } catch (e) {
+      console.warn("unsync on hard delete failed", e);
+    }
+
+    await supabaseAdmin.from("lesson_chunks").delete().eq("lesson_id", data.lesson_id);
+    await supabaseAdmin.from("lesson_files").delete().eq("lesson_id", data.lesson_id);
+    const { error } = await supabaseAdmin.from("lessons").delete().eq("id", data.lesson_id);
+    if (error) throw new Error(error.message);
+    return { ok: true };
+  });
+
+/** Platform admin: list all soft-deleted lessons across bootcamps. */
+export const listDeletedLessons = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { supabase, userId } = context;
+    await requirePlatformAdmin(supabase, userId);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
+      .from("lessons")
+      .select("id, title, bootcamp_id, deleted_at, deleted_by, bootcamps(name)")
+      .not("deleted_at", "is", null)
+      .order("deleted_at", { ascending: false });
+    if (error) throw new Error(error.message);
+
+    const deleterIds = Array.from(
+      new Set((data ?? []).map((l) => l.deleted_by).filter((v): v is string => !!v)),
+    );
+    let profileMap = new Map<string, { first_name: string | null; last_name: string | null; email: string | null }>();
+    if (deleterIds.length > 0) {
+      const { data: profiles } = await supabaseAdmin
+        .from("profiles")
+        .select("id, first_name, last_name, email")
+        .in("id", deleterIds);
+      profileMap = new Map(
+        (profiles ?? []).map((p) => [
+          p.id,
+          { first_name: p.first_name, last_name: p.last_name, email: p.email },
+        ]),
+      );
+    }
+
+    return (data ?? []).map((l) => {
+      const p = l.deleted_by ? profileMap.get(l.deleted_by) : null;
+      const deleterName = p
+        ? [p.first_name, p.last_name].filter(Boolean).join(" ") || p.email || "Unknown"
+        : "Unknown";
+      return {
+        id: l.id,
+        title: l.title,
+        bootcamp_id: l.bootcamp_id,
+        bootcamp_name: (l.bootcamps as { name?: string } | null)?.name ?? "—",
+        deleted_at: l.deleted_at,
+        deleted_by_name: deleterName,
+      };
+    });
+  });
+
+
