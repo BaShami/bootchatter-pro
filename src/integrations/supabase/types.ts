@@ -401,6 +401,8 @@ export type Database = {
         Row: {
           bootcamp_id: string
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
           file_name: string
           file_size: number | null
           id: string
@@ -411,6 +413,8 @@ export type Database = {
         Insert: {
           bootcamp_id: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           file_name: string
           file_size?: number | null
           id?: string
@@ -421,6 +425,8 @@ export type Database = {
         Update: {
           bootcamp_id?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
           file_name?: string
           file_size?: number | null
           id?: string
