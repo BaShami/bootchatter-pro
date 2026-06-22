@@ -39,21 +39,29 @@ export function useLesson(id: string | undefined) {
   });
 }
 
-export function useLessonFiles(lessonId: string | undefined) {
+export function useLessonFiles(
+  lessonId: string | undefined,
+  opts: { includeDeleted?: boolean; deletedOnly?: boolean } = {},
+) {
+  const { includeDeleted = false, deletedOnly = false } = opts;
   return useQuery({
-    queryKey: ["lesson-files", lessonId],
+    queryKey: ["lesson-files", lessonId, { includeDeleted, deletedOnly }],
     enabled: !!lessonId,
     queryFn: async (): Promise<LessonFileRow[]> => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("lesson_files")
         .select("*")
         .eq("lesson_id", lessonId!)
         .order("created_at", { ascending: false });
+      if (deletedOnly) q = q.not("deleted_at", "is", null);
+      else if (!includeDeleted) q = q.is("deleted_at", null);
+      const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },
   });
 }
+
 
 export function useLessonChunkCount(lessonId: string | undefined) {
   return useQuery({
