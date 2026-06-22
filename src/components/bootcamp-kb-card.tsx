@@ -31,7 +31,8 @@ export function BootcampKnowledgeBaseCard({ bootcampId }: { bootcampId: string }
       const { data, error } = await supabase
         .from("lessons")
         .select("id, status, openai_indexing_status")
-        .eq("bootcamp_id", bootcampId);
+        .eq("bootcamp_id", bootcampId)
+        .is("deleted_at", null);
       if (error) throw error;
       return data ?? [];
     },
