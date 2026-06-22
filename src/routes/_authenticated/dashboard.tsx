@@ -175,6 +175,13 @@ function Dashboard() {
         <StatCard label="Low confidence" value={s?.lowConf ?? 0} icon={AlertCircle} loading={loading} />
         <StatCard label="Unanswered" value={s?.unanswered ?? 0} icon={AlertCircle} loading={loading} />
         <StatCard
+          label="Open escalations"
+          value={s?.openEscalations ?? 0}
+          icon={AlertTriangle}
+          loading={loading}
+          accent={(s?.openEscalations ?? 0) > 0 ? "amber" : undefined}
+        />
+        <StatCard
           label="Active students"
           value={s?.activeStudents ?? 0}
           icon={TrendingUp}
