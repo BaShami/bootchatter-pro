@@ -3,13 +3,19 @@ import mammoth from "mammoth";
 const MAX_EXTRACTED_CHARS = 20_000;
 
 async function extractPdfText(buffer: Buffer): Promise<string> {
-  const { PDFParse } = await import("pdf-parse");
-  const parser = new PDFParse({ data: buffer });
+  const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
+  const uint8 = new Uint8Array(buffer);
+  const doc = await getDocument({ data: uint8 }).promise;
   try {
-    const result = await parser.getText();
-    return result.text;
+    const parts: string[] = [];
+    for (let i = 1; i <= doc.numPages; i++) {
+      const page = await doc.getPage(i);
+      const content = await page.getTextContent();
+      parts.push(content.items.map((it: any) => ("str" in it ? it.str : "")).join(" "));
+    }
+    return parts.join("\n");
   } finally {
-    await parser.destroy();
+    await (doc as any).destroy?.();
   }
 }
 
