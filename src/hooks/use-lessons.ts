@@ -6,33 +6,39 @@ export type LessonRow = Database["public"]["Tables"]["lessons"]["Row"];
 export type LessonFileRow = Database["public"]["Tables"]["lesson_files"]["Row"];
 export type LessonStatus = Database["public"]["Enums"]["lesson_status"];
 
-export function useLessons(bootcampId: string | undefined) {
+export function useLessons(
+  bootcampId: string | undefined,
+  opts: { includeDeleted?: boolean; deletedOnly?: boolean } = {},
+) {
+  const { includeDeleted = false, deletedOnly = false } = opts;
   return useQuery({
-    queryKey: ["lessons", bootcampId],
+    queryKey: ["lessons", bootcampId, { includeDeleted, deletedOnly }],
     enabled: !!bootcampId,
     queryFn: async (): Promise<LessonRow[]> => {
-      const { data, error } = await supabase
+      let q = supabase
         .from("lessons")
         .select("*")
         .eq("bootcamp_id", bootcampId!)
         .order("lesson_number", { ascending: true, nullsFirst: false })
         .order("created_at", { ascending: false });
+      if (deletedOnly) q = q.not("deleted_at", "is", null);
+      else if (!includeDeleted) q = q.is("deleted_at", null);
+      const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },
   });
 }
 
-export function useLesson(id: string | undefined) {
+export function useLesson(id: string | undefined, opts: { includeDeleted?: boolean } = {}) {
+  const { includeDeleted = false } = opts;
   return useQuery({
-    queryKey: ["lesson", id],
+    queryKey: ["lesson", id, { includeDeleted }],
     enabled: !!id,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("lessons")
-        .select("*")
-        .eq("id", id!)
-        .maybeSingle();
+      let q = supabase.from("lessons").select("*").eq("id", id!);
+      if (!includeDeleted) q = q.is("deleted_at", null);
+      const { data, error } = await q.maybeSingle();
       if (error) throw error;
       return data;
     },
