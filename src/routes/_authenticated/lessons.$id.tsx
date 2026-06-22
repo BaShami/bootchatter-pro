@@ -19,7 +19,15 @@ import {
   useLesson,
   useLessonChunkCount,
 } from "@/hooks/use-lessons";
-import { processLesson, setLessonPublished } from "@/lib/lessons.functions";
+import { processLesson, setLessonPublished, softDeleteLesson } from "@/lib/lessons.functions";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
