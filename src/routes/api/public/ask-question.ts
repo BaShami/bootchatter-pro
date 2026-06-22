@@ -59,6 +59,20 @@ function formatQuizResults(
   return `You scored ${score}/3 🎉\n\n${lines.join("\n")}\n\n${encouragement}\n\nAny questions about the lesson? Just ask 👇`;
 }
 
+const HUMAN_ESCALATION_PHRASES = [
+  "human",
+  "support",
+  "talk to someone",
+  "speak to someone",
+  "real person",
+] as const;
+
+function isHumanEscalation(message: string): boolean {
+  const lower = message.trim().toLowerCase();
+  if ((HUMAN_ESCALATION_PHRASES as readonly string[]).includes(lower)) return true;
+  return /\bhelp\b/i.test(message);
+}
+
 // Simple in-memory sliding-window rate limit (single-instance deployment).
 // Key: phone_number. Limit: 10 requests / 60 seconds.
 const RATE_LIMIT_MAX = 10;
@@ -129,7 +143,7 @@ export const Route = createFileRoute("/api/public/ask-question")({
         // Resolve student from phone (server-side; Make.com cannot override bootcamp)
         const { data: student, error: studentErr } = await supabaseAdmin
           .from("students")
-          .select("id, bootcamp_id, first_name, last_name, enrollment_status")
+          .select("id, bootcamp_id, first_name, last_name, enrollment_status, consent_status")
           .eq("phone_number", body.phone_number)
           .maybeSingle();
         if (studentErr) return json(500, { error: "Database error" });
@@ -139,6 +153,9 @@ export const Route = createFileRoute("/api/public/ask-question")({
             message:
               "This phone number is not enrolled in any bootcamp. Please contact your instructor.",
           });
+        }
+        if (student.consent_status === "revoked") {
+          return json(200, { answer: "" });
         }
         if (student.enrollment_status === "suspended") {
           return json(403, {
@@ -267,6 +284,88 @@ export const Route = createFileRoute("/api/public/ask-question")({
 
             return json(200, { answer: formatQuizResults(score, updatedAnswers) });
           }
+        }
+
+        if (upper === "STOP") {
+          await supabaseAdmin
+            .from("students")
+            .update({ consent_status: "revoked" })
+            .eq("id", student.id);
+
+          return json(200, {
+            answer:
+              "You have been unsubscribed. You will no longer receive messages from this number. Contact your instructor directly if you need help.",
+          });
+        }
+
+        if (isHumanEscalation(trimmed)) {
+          const { data: recentQuestions } = await supabaseAdmin
+            .from("questions")
+            .select("question_text, ai_answer")
+            .eq("student_id", student.id)
+            .order("created_at", { ascending: false })
+            .limit(10);
+
+          const formattedHistory = (recentQuestions ?? [])
+            .map(
+              (q, i) =>
+                `${i + 1}. Q: ${q.question_text}\n   A: ${q.ai_answer ?? "(no answer)"}`,
+            )
+            .join("\n\n");
+
+          const { openaiChat } = await import("@/lib/openai.server");
+          const aiSummary = await openaiChat({
+            system:
+              "You summarise student support conversations concisely for an instructor.",
+            user: `Summarise this student's recent questions and what they were struggling with, in 3-5 sentences. Student name: ${student.first_name}. Recent questions:\n\n${formattedHistory || "(no recent questions)"}`,
+            max_tokens: 300,
+          });
+
+          const { error: escalationErr } = await supabaseAdmin.from("escalations").insert({
+            student_id: student.id,
+            bootcamp_id: student.bootcamp_id,
+            summary: aiSummary,
+            status: "open",
+          });
+          if (escalationErr) {
+            console.error("[ask-question] escalation insert failed:", escalationErr);
+          }
+
+          const { data: bootcamp } = await supabaseAdmin
+            .from("bootcamps")
+            .select("name")
+            .eq("id", student.bootcamp_id)
+            .maybeSingle();
+
+          const webhookUrl = process.env.ESCALATION_EMAIL_WEBHOOK_URL?.trim();
+          if (webhookUrl) {
+            try {
+              const res = await fetch(webhookUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  student_name: student.first_name,
+                  bootcamp_name: bootcamp?.name ?? "",
+                  summary: aiSummary,
+                  created_at: new Date().toISOString(),
+                }),
+              });
+              if (!res.ok) {
+                console.error(
+                  "[ask-question] escalation email webhook non-2xx",
+                  res.status,
+                  await res.text().catch(() => ""),
+                );
+              }
+            } catch (e) {
+              console.error("[ask-question] escalation email webhook error", e);
+            }
+          }
+
+          return json(200, {
+            answer:
+              "I've flagged this for your instructor. Someone will follow up with you shortly. 🙏",
+          });
         }
 
         const { data: kbArticles } = await supabaseAdmin
