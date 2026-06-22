@@ -28,6 +28,7 @@ import { Route as AuthenticatedLessonsIdRouteImport } from './routes/_authentica
 import { Route as AuthenticatedBootcampsIdRouteImport } from './routes/_authenticated/bootcamps.$id'
 import { Route as AuthenticatedAnnouncementsNewRouteImport } from './routes/_authenticated/announcements.new'
 import { Route as AuthenticatedAnnouncementsIdRouteImport } from './routes/_authenticated/announcements.$id'
+import { Route as AuthenticatedAdminRecycleBinRouteImport } from './routes/_authenticated/admin.recycle-bin'
 import { Route as AuthenticatedAdminPasswordRequestsRouteImport } from './routes/_authenticated/admin.password-requests'
 import { Route as ApiPublicHooksReconcileIndexingRouteImport } from './routes/api/public/hooks/reconcile-indexing'
 
@@ -133,6 +134,12 @@ const AuthenticatedAnnouncementsIdRoute =
     path: '/announcements/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminRecycleBinRoute =
+  AuthenticatedAdminRecycleBinRouteImport.update({
+    id: '/admin/recycle-bin',
+    path: '/admin/recycle-bin',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminPasswordRequestsRoute =
   AuthenticatedAdminPasswordRequestsRouteImport.update({
     id: '/admin/password-requests',
@@ -156,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/students': typeof AuthenticatedStudentsRoute
   '/invite/$token': typeof InviteTokenRoute
   '/admin/password-requests': typeof AuthenticatedAdminPasswordRequestsRoute
+  '/admin/recycle-bin': typeof AuthenticatedAdminRecycleBinRoute
   '/announcements/$id': typeof AuthenticatedAnnouncementsIdRoute
   '/announcements/new': typeof AuthenticatedAnnouncementsNewRoute
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
@@ -178,6 +186,7 @@ export interface FileRoutesByTo {
   '/students': typeof AuthenticatedStudentsRoute
   '/invite/$token': typeof InviteTokenRoute
   '/admin/password-requests': typeof AuthenticatedAdminPasswordRequestsRoute
+  '/admin/recycle-bin': typeof AuthenticatedAdminRecycleBinRoute
   '/announcements/$id': typeof AuthenticatedAnnouncementsIdRoute
   '/announcements/new': typeof AuthenticatedAnnouncementsNewRoute
   '/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
@@ -202,6 +211,7 @@ export interface FileRoutesById {
   '/_authenticated/students': typeof AuthenticatedStudentsRoute
   '/invite/$token': typeof InviteTokenRoute
   '/_authenticated/admin/password-requests': typeof AuthenticatedAdminPasswordRequestsRoute
+  '/_authenticated/admin/recycle-bin': typeof AuthenticatedAdminRecycleBinRoute
   '/_authenticated/announcements/$id': typeof AuthenticatedAnnouncementsIdRoute
   '/_authenticated/announcements/new': typeof AuthenticatedAnnouncementsNewRoute
   '/_authenticated/bootcamps/$id': typeof AuthenticatedBootcampsIdRoute
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
     | '/students'
     | '/invite/$token'
     | '/admin/password-requests'
+    | '/admin/recycle-bin'
     | '/announcements/$id'
     | '/announcements/new'
     | '/bootcamps/$id'
@@ -248,6 +259,7 @@ export interface FileRouteTypes {
     | '/students'
     | '/invite/$token'
     | '/admin/password-requests'
+    | '/admin/recycle-bin'
     | '/announcements/$id'
     | '/announcements/new'
     | '/bootcamps/$id'
@@ -271,6 +283,7 @@ export interface FileRouteTypes {
     | '/_authenticated/students'
     | '/invite/$token'
     | '/_authenticated/admin/password-requests'
+    | '/_authenticated/admin/recycle-bin'
     | '/_authenticated/announcements/$id'
     | '/_authenticated/announcements/new'
     | '/_authenticated/bootcamps/$id'
@@ -429,6 +442,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnnouncementsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/recycle-bin': {
+      id: '/_authenticated/admin/recycle-bin'
+      path: '/admin/recycle-bin'
+      fullPath: '/admin/recycle-bin'
+      preLoaderRoute: typeof AuthenticatedAdminRecycleBinRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/password-requests': {
       id: '/_authenticated/admin/password-requests'
       path: '/admin/password-requests'
@@ -452,6 +472,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedQuestionsRoute: typeof AuthenticatedQuestionsRoute
   AuthenticatedStudentsRoute: typeof AuthenticatedStudentsRoute
   AuthenticatedAdminPasswordRequestsRoute: typeof AuthenticatedAdminPasswordRequestsRoute
+  AuthenticatedAdminRecycleBinRoute: typeof AuthenticatedAdminRecycleBinRoute
   AuthenticatedAnnouncementsIdRoute: typeof AuthenticatedAnnouncementsIdRoute
   AuthenticatedAnnouncementsNewRoute: typeof AuthenticatedAnnouncementsNewRoute
   AuthenticatedBootcampsIdRoute: typeof AuthenticatedBootcampsIdRoute
@@ -470,6 +491,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedStudentsRoute: AuthenticatedStudentsRoute,
   AuthenticatedAdminPasswordRequestsRoute:
     AuthenticatedAdminPasswordRequestsRoute,
+  AuthenticatedAdminRecycleBinRoute: AuthenticatedAdminRecycleBinRoute,
   AuthenticatedAnnouncementsIdRoute: AuthenticatedAnnouncementsIdRoute,
   AuthenticatedAnnouncementsNewRoute: AuthenticatedAnnouncementsNewRoute,
   AuthenticatedBootcampsIdRoute: AuthenticatedBootcampsIdRoute,

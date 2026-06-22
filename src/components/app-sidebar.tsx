@@ -11,6 +11,7 @@ import {
   LogOut,
   Sparkles,
   KeyRound,
+  Trash2,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
