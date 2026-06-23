@@ -354,7 +354,7 @@ async function classifyMessageIntent(
           {
             role: "system",
             content:
-              "Is this message a casual/social statement (greetings, acknowledgements, thanks, confirmations like 'ok', 'noted', 'got it', 'thanks') rather than a question about course content? Reply with only: SOCIAL or QUESTION.",
+              "Is this message a casual/social statement (greetings, acknowledgements, thanks, confirmations like 'ok', 'noted', 'got it', 'thanks', or standalone emojis like 👍 😊 🙏) rather than a question about course content? Reply with only: SOCIAL or QUESTION.",
           },
           { role: "user", content: question },
         ],
