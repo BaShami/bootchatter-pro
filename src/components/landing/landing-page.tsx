@@ -42,6 +42,66 @@ function SectionLabel({ children, light = false }: { children: React.ReactNode; 
   );
 }
 
+function ChatMockup() {
+  return (
+    <div className="w-full max-w-sm overflow-hidden rounded-[2.5rem] border border-[#e8e8e6] bg-[#f0f0ee] shadow-2xl sm:max-w-md lg:max-w-sm">
+      <div className="flex items-center gap-3 bg-[#128c7e] px-4 py-3">
+        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+            <path d="M2 22V2h20v16H6l-4 4zm2-6h16V4H4v12zm2-8h12v2H6V8zm0 4h9v2H6v-2z" />
+          </svg>
+        </div>
+        <div>
+          <div className="text-sm font-semibold text-white">BootChatter</div>
+          <div className="text-xs text-emerald-100">online</div>
+        </div>
+      </div>
+
+      <div className="space-y-3 bg-[#e5ddd5] p-4 text-sm">
+        <div className="rounded-lg rounded-tl-none bg-white px-3 py-2 text-slate-800 shadow-sm">
+          Hi 👋 Ask me anything about today's lesson.
+          <div className="mt-1 text-right text-[10px] text-slate-400">9:01</div>
+        </div>
+
+        <div className="ml-auto max-w-[85%] rounded-lg rounded-tr-none bg-[#dcf8c6] px-3 py-2 text-slate-800 shadow-sm">
+          What's the difference between props and state in React?
+          <div className="mt-1 text-right text-[10px] text-slate-500">9:02 ✓✓</div>
+        </div>
+
+        <div className="rounded-lg rounded-tl-none bg-white px-3 py-2 text-slate-800 shadow-sm">
+          Props are passed <em>into</em> a component from its parent and are read-only. State is owned{" "}
+          <em>inside</em> the component and can change over time — when it does, the component
+          re-renders.
+          <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-[#dcf8c6] px-2 py-1 text-[10px] font-medium text-emerald-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-600" />
+            From your Lesson 4 · React Basics
+          </div>
+          <div className="mt-1 text-right text-[10px] text-slate-400">9:02</div>
+        </div>
+
+        <div className="ml-auto max-w-[40%] rounded-lg rounded-tr-none bg-[#dcf8c6] px-3 py-2 text-slate-800 shadow-sm">
+          QUIZ
+          <div className="mt-1 text-right text-[10px] text-slate-500">9:03 ✓✓</div>
+        </div>
+
+        <div className="rounded-lg rounded-tl-none bg-white px-3 py-2 text-slate-800 shadow-sm">
+          Question 1 of 3 — reply A, B or C 👇
+          <div className="mt-1 text-right text-[10px] text-slate-400">9:03</div>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 bg-[#f0f0ee] px-3 py-3">
+        <div className="flex-1 rounded-full bg-white px-4 py-2 text-sm text-slate-400">Message</div>
+        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#128c7e] text-white">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
+            <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function LandingHeader() {
   const { user, loading } = useSession();
 
