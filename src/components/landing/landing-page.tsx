@@ -168,7 +168,7 @@ function HeroSection() {
               height={1000}
               loading="eager"
               decoding="async"
-              className="h-[520px] w-full rounded-[2.5rem] object-cover object-center shadow-2xl sm:h-[620px] lg:h-[700px]"
+              className="h-auto w-full rounded-[2.5rem] shadow-2xl"
             />
           </div>
         </div>
