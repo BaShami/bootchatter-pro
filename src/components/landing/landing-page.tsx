@@ -162,7 +162,7 @@ function HeroSection() {
         <div className="relative flex justify-center lg:justify-end">
           <div className="relative w-full max-w-sm sm:max-w-md lg:max-w-lg">
             <img
-              src={heroPhone.url}
+              src={heroPhone}
               alt="WhatsApp conversation with the BootChatter AI assistant"
               width={600}
               height={1000}
