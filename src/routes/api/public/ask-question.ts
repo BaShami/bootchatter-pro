@@ -62,15 +62,19 @@ function formatQuizResults(
 const HUMAN_ESCALATION_PHRASES = [
   "human",
   "support",
+  "help",
   "talk to someone",
   "speak to someone",
   "real person",
+  "talk to human",
+  "talk to a human",
+  "speak to instructor",
+  "speak to an instructor",
 ] as const;
 
 function isHumanEscalation(message: string): boolean {
   const lower = message.trim().toLowerCase();
-  if ((HUMAN_ESCALATION_PHRASES as readonly string[]).includes(lower)) return true;
-  return /\bhelp\b/i.test(message);
+  return (HUMAN_ESCALATION_PHRASES as readonly string[]).includes(lower);
 }
 
 function formatKbContext(
@@ -326,8 +330,8 @@ export const Route = createFileRoute("/api/public/ask-question")({
           const { openaiChat } = await import("@/lib/openai.server");
           const aiSummary = await openaiChat({
             system:
-              "You summarise student support conversations concisely for an instructor.",
-            user: `Summarise this student's recent questions and what they were struggling with, in 3-5 sentences. Student name: ${student.first_name}. Recent questions:\n\n${formattedHistory || "(no recent questions)"}`,
+              "You summarise student support requests concisely for an instructor. If there is little history, focus on the triggering message and what the student likely needs.",
+            user: `Summarise this student's recent questions and what they were struggling with, in 3-5 sentences. Student name: ${student.first_name}. Recent questions:\n\n${formattedHistory || "(no recent questions)"}\n\nThe message that triggered this escalation was: "${trimmed}"`,
             max_tokens: 300,
           });
 
@@ -335,6 +339,7 @@ export const Route = createFileRoute("/api/public/ask-question")({
             student_id: student.id,
             bootcamp_id: student.bootcamp_id,
             summary: aiSummary,
+            trigger_message: trimmed,
             status: "open",
           });
           if (escalationErr) {

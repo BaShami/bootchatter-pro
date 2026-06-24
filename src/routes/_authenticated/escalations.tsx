@@ -38,6 +38,7 @@ type EscalationRow = {
   student_id: string;
   status: string;
   summary: string | null;
+  trigger_message: string | null;
   created_at: string;
   resolved_at: string | null;
   resolved_by: string | null;
@@ -59,7 +60,7 @@ function useEscalations() {
       let q = supabase
         .from("escalations")
         .select(
-          "id, bootcamp_id, student_id, status, summary, created_at, resolved_at, resolved_by, students(first_name, last_name, phone_number), bootcamps(name)",
+          "id, bootcamp_id, student_id, status, summary, trigger_message, created_at, resolved_at, resolved_by, students(first_name, last_name, phone_number), bootcamps(name)",
         )
         .order("created_at", { ascending: false });
       if (!perms?.isPlatformAdmin) {
@@ -230,6 +231,15 @@ function EscalationDetail({
           <span className="text-xs text-muted-foreground">
             Created {formatRelative(escalation.created_at)}
           </span>
+        </div>
+
+        <div>
+          <div className="text-sm font-medium">Student's message</div>
+          <div className="mb-3">
+            {escalation.trigger_message?.trim() || (
+              <span className="text-muted-foreground">Not captured.</span>
+            )}
+          </div>
         </div>
 
         <div>
