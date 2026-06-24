@@ -221,7 +221,7 @@ function HowItWorksSection() {
 
         <div className="mt-12 overflow-hidden rounded-3xl shadow-xl">
           <img
-            src={howItWorksImg.url}
+            src={howItWorksImg}
             alt="Instructor uploading lesson files and students messaging the AI assistant on WhatsApp"
             width={1200}
             height={700}
