@@ -1054,6 +1054,15 @@ export type Database = {
           similarity: number
         }[]
       }
+      search_kb_articles: {
+        Args: { p_bootcamp_id: string; p_limit?: number; p_query: string }
+        Returns: {
+          article_id: string
+          extracted_text: string
+          rank: number
+          title: string
+        }[]
+      }
       search_published_lesson_chunks: {
         Args: { p_bootcamp_id: string; p_limit?: number; p_query: string }
         Returns: {
