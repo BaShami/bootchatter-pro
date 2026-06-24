@@ -309,6 +309,7 @@ export type Database = {
           status: string
           student_id: string
           summary: string | null
+          trigger_message: string | null
           updated_at: string
         }
         Insert: {
@@ -321,6 +322,7 @@ export type Database = {
           status?: string
           student_id: string
           summary?: string | null
+          trigger_message?: string | null
           updated_at?: string
         }
         Update: {
@@ -333,6 +335,7 @@ export type Database = {
           status?: string
           student_id?: string
           summary?: string | null
+          trigger_message?: string | null
           updated_at?: string
         }
         Relationships: [
