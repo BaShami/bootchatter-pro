@@ -3,7 +3,7 @@ import { useSession } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-import heroPhone from "@/assets/landing-hero-phone.png";
+import heroPhone from "@/assets/landing-hero-phone.jpg";
 import howItWorksImg from "@/assets/landing-how-it-works.png";
 import businessCaseImg from "@/assets/landing-business-case.png";
 
