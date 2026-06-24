@@ -416,6 +416,7 @@ export type Database = {
           file_size: number
           file_type: string
           id: string
+          search_vector: unknown
           tag: string
           title: string
           updated_at: string
@@ -431,6 +432,7 @@ export type Database = {
           file_size: number
           file_type: string
           id?: string
+          search_vector?: unknown
           tag: string
           title: string
           updated_at?: string
@@ -446,6 +448,7 @@ export type Database = {
           file_size?: number
           file_type?: string
           id?: string
+          search_vector?: unknown
           tag?: string
           title?: string
           updated_at?: string
@@ -1063,6 +1066,7 @@ export type Database = {
           article_id: string
           extracted_text: string
           rank: number
+          tag: string
           title: string
         }[]
       }
