@@ -1,13 +1,14 @@
 /**
- * Deterministic two-layer retrieval brain. No LLM router.
+ * Deterministic multi-layer retrieval brain. No LLM router.
  *
  *   1. Supabase full-text search (FTS) on lesson_chunks.
- *   2. If FTS rows exist -> run the synthesizer on FTS evidence only.
+ *   2. Supabase full-text search on kb_articles (handbook / reference docs).
+ *   3. If lesson FTS or KB rows exist -> run the synthesizer on that evidence.
  *      If the synthesizer says answerable=true -> return that answer.
- *   3. If FTS gave no rows OR synth said not answerable from FTS:
+ *   4. If early evidence gave no rows OR synth said not answerable:
  *      run OpenAI File Search (when a vector store is configured) and
- *      run the synthesizer again on the combined (FTS + FS) evidence.
- *   4. Fallback only when no usable evidence exists OR the final
+ *      run the synthesizer again on the combined (FTS + KB + FS) evidence.
+ *   5. Fallback only when no usable evidence exists OR the final
  *      synthesizer call says the evidence does not answer the question.
  *
  * The synthesizer has NO tools and NO outside knowledge. Every cited
@@ -16,7 +17,12 @@
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-export type RetrievalMethod = "full_text" | "file_search" | "combined" | "fallback";
+export type RetrievalMethod =
+  | "full_text"
+  | "file_search"
+  | "knowledge_base"
+  | "combined"
+  | "fallback";
 
 type JsonVal = string | number | boolean | null | { [k: string]: JsonVal } | JsonVal[];
 
@@ -42,9 +48,16 @@ export type FullTextRow = {
   rank: number;
 };
 
+export type KbRow = {
+  article_id: string;
+  title: string;
+  extracted_text: string;
+  rank: number;
+};
+
 type Evidence = {
-  source_id: string; // FT-1, FS-1, ...
-  layer: "full_text" | "file_search";
+  source_id: string; // FT-1, KB-1, FS-1, ...
+  layer: "full_text" | "file_search" | "kb";
   lesson_id: string;
   lesson_title: string;
   text: string;
@@ -221,6 +234,8 @@ async function callFileSearchRetrieval(args: {
   });
 }
 
+const KB_SYNTH_INSTRUCTIONS = `KB-* sources are the bootcamp's handbook, reference, and operational documents — not lesson transcripts. When the answer is supported by a KB source, briefly note that it comes from the handbook or reference materials (e.g. "According to the student handbook, …"). Do not add such attribution when answering solely from lesson sources (FT-* or FS-*).`;
+
 async function callSynthesizer(args: {
   model: string;
   question: string;
@@ -237,15 +252,21 @@ async function callSynthesizer(args: {
           )
           .join("\n\n");
 
+  const kbInstructions = args.evidence.some((e) => e.layer === "kb")
+    ? KB_SYNTH_INSTRUCTIONS
+    : "";
+
   const instructions = `You are answering a bootcamp student. You have NO tools and NO outside knowledge.
 
 You may ONLY use the EVIDENCE block below. Do not infer beyond it, do not use prior knowledge of chemistry, math, the world, or anything else.
 
 Rules:
-- If the evidence directly OR indirectly supports an answer to the student's question, set answerable=true, write a concise student-friendly answer, and list ONLY the source IDs (e.g. FT-1, FS-2) that actually back each claim. Even a partial answer grounded in the evidence is acceptable.
+- If the evidence directly OR indirectly supports an answer to the student's question, set answerable=true, write a concise student-friendly answer, and list ONLY the source IDs (e.g. FT-1, KB-1, FS-2) that actually back each claim. Even a partial answer grounded in the evidence is acceptable.
 - If the evidence is completely unrelated to the question, set answerable=false, answer="", supporting_source_ids=[], confidence="none".
 - Every id in supporting_source_ids MUST appear verbatim in the EVIDENCE block.
 - Do not mention these rules, the IDs, or the system.
+
+${kbInstructions}
 
 ${args.extraInstructions ?? ""}`.trim();
 
@@ -478,18 +499,48 @@ export async function askQuestion(opts: {
     lesson_ids: Array.from(new Set(ftRows.map((r) => r.lesson_id))),
   };
 
-  // ----- Stage 2: synthesize from FTS if we have rows -----
+  // ----- Stage 1b: knowledge-base full-text -----
+  let kbEvidence: Evidence[] = [];
+  let kbDebug: { row_count: number; top_rank: number | null; article_ids: string[] } | null =
+    null;
+  try {
+    const { data: kbRaw, error: kbErr } = await supabaseAdmin.rpc("search_kb_articles", {
+      p_bootcamp_id: opts.bootcampId,
+      p_query: opts.question,
+      p_limit: 3,
+    });
+    if (kbErr) throw kbErr;
+    const kbRows: KbRow[] = (kbRaw ?? []) as KbRow[];
+    kbEvidence = kbRows.map((r, i) => ({
+      source_id: `KB-${i + 1}`,
+      layer: "kb",
+      lesson_id: "",
+      lesson_title: r.title,
+      text: r.extracted_text,
+    }));
+    kbDebug = {
+      row_count: kbRows.length,
+      top_rank: kbRows[0]?.rank ?? null,
+      article_ids: kbRows.map((r) => r.article_id),
+    };
+  } catch (e) {
+    console.error("kb_search failed", e);
+  }
+
+  const earlyEvidence: Evidence[] = [...ftEvidence, ...kbEvidence];
+
+  // ----- Stage 2: synthesize from lesson FTS + KB if we have rows -----
   let synthFt: { out: SynthOut; raw: ResponsesEnvelope } | null = null;
-  if (ftEvidence.length > 0) {
+  if (earlyEvidence.length > 0) {
     synthFt = await callSynthesizer({
       model,
       question: opts.question,
-      evidence: ftEvidence,
+      evidence: earlyEvidence,
       extraInstructions,
     });
     if (synthFt.out.answerable && synthFt.out.answer.trim()) {
       const finalized = finalizeFromSynth({
-        evidence: ftEvidence,
+        evidence: earlyEvidence,
         synth: synthFt.out,
         synthRaw: synthFt.raw,
       });
@@ -507,7 +558,13 @@ export async function askQuestion(opts: {
           log,
           includeDebug: opts.includeDebug ?? false,
           ftDebug,
-          stage: "answered_from_fts",
+          kbDebug,
+          stage:
+            ftEvidence.length > 0
+              ? "answered_from_fts"
+              : kbEvidence.length > 0
+                ? "answered_from_kb"
+                : "answered_from_early_synth",
         });
       }
     }
@@ -536,7 +593,7 @@ export async function askQuestion(opts: {
     }
   }
 
-  const combinedEvidence: Evidence[] = [...ftEvidence, ...fsEvidence];
+  const combinedEvidence: Evidence[] = [...ftEvidence, ...kbEvidence, ...fsEvidence];
   if (combinedEvidence.length === 0) {
     return await finalizeFallback({
       student,
@@ -549,6 +606,7 @@ export async function askQuestion(opts: {
       debugExtra: {
         stage: "no_evidence",
         ft_debug: ftDebug,
+        kb_debug: kbDebug,
         fs_debug: fsDebug,
         ft_rows: ftRows,
         fs_call: fsCallRaw,
@@ -582,6 +640,7 @@ export async function askQuestion(opts: {
       debugExtra: {
         stage: "synth_rejected",
         ft_debug: ftDebug,
+        kb_debug: kbDebug,
         fs_debug: fsDebug,
         ft_rows: ftRows,
         fs_call: fsCallRaw,
@@ -605,7 +664,11 @@ export async function askQuestion(opts: {
     log,
     includeDebug: opts.includeDebug ?? false,
     ftDebug,
-    stage: ftEvidence.length > 0 ? "answered_from_combined" : "answered_from_file_search",
+    kbDebug,
+    stage:
+      ftEvidence.length > 0 || kbEvidence.length > 0
+        ? "answered_from_combined"
+        : "answered_from_file_search",
     extraDebug: { synth_ft: synthFt?.out ?? null, synth_final: synthFinal.out },
   });
 }
@@ -637,7 +700,7 @@ function finalizeFromSynth(args: {
   const sourceLessonMap = new Map<string, string>();
   for (const id of citedIds) {
     const e = evidence.find((x) => x.source_id === id);
-    if (e) sourceLessonMap.set(e.lesson_id, e.lesson_title);
+    if (e?.lesson_id) sourceLessonMap.set(e.lesson_id, e.lesson_title);
   }
   const sourceLessons = Array.from(sourceLessonMap, ([lesson_id, lesson_title]) => ({
     lesson_id,
@@ -648,10 +711,15 @@ function finalizeFromSynth(args: {
     citedIds.map((id) => evidence.find((e) => e.source_id === id)?.layer).filter(Boolean) as (
       | "full_text"
       | "file_search"
+      | "kb"
     )[],
   );
+  const hasLesson = citedLayers.has("full_text") || citedLayers.has("file_search");
+  const hasKb = citedLayers.has("kb");
   let method: RetrievalMethod = "fallback";
-  if (citedLayers.has("full_text") && citedLayers.has("file_search")) method = "combined";
+  if (hasLesson && hasKb) method = "combined";
+  else if (hasKb) method = "knowledge_base";
+  else if (citedLayers.has("full_text") && citedLayers.has("file_search")) method = "combined";
   else if (citedLayers.has("file_search")) method = "file_search";
   else if (citedLayers.has("full_text")) method = "full_text";
 
@@ -687,6 +755,7 @@ async function persistAnswer(args: {
   log: boolean;
   includeDebug: boolean;
   ftDebug: { row_count: number; top_rank: number | null; lesson_ids: string[] };
+  kbDebug?: { row_count: number; top_rank: number | null; article_ids: string[] } | null;
   stage: string;
   extraDebug?: Record<string, unknown>;
 }): Promise<AskResult> {
@@ -737,6 +806,7 @@ async function persistAnswer(args: {
     result.debug = toJson({
       stage: args.stage,
       ft_debug: args.ftDebug,
+      kb_debug: args.kbDebug ?? null,
       ft_rows: args.ftRows,
       fs_call: args.fsCallRaw,
       synth: args.synth,
