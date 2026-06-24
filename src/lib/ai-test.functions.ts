@@ -135,7 +135,7 @@ export const backfillPublishedLessons = createServerFn({ method: "POST" })
     return { count: results.length, results };
   });
 
-type Method = "full_text" | "file_search" | "combined" | "fallback";
+type Method = "full_text" | "file_search" | "knowledge_base" | "combined" | "fallback";
 type TestCase = {
   name: string;
   question: string;
