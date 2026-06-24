@@ -330,7 +330,7 @@ function BusinessCaseSection() {
 
         <div className="mt-12 overflow-hidden rounded-3xl shadow-2xl">
           <img
-            src={businessCaseImg.url}
+            src={businessCaseImg}
             alt="Bootcamp analytics dashboard showing revenue, enrollments, and student engagement"
             width={1200}
             height={675}
