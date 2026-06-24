@@ -195,7 +195,10 @@ export const Route = createFileRoute("/api/public/ask-question")({
             .maybeSingle();
 
           if (!lesson) {
-            return json(200, { answer: "No lessons are available yet. Check back soon!" });
+            return json(200, {
+              answer:
+                "📚 No quiz yet! Quizzes unlock once your first lesson is published. Stay tuned — we'll let you know when it's ready!",
+            });
           }
 
           const questions = await generateQuizQuestions(lesson);
