@@ -3,9 +3,9 @@ import { useSession } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-import heroPhone from "@/assets/landing-hero-phone.png.asset.json";
-import howItWorksImg from "@/assets/landing-how-it-works.png.asset.json";
-import businessCaseImg from "@/assets/landing-business-case.png.asset.json";
+import heroPhone from "@/assets/landing-hero-phone.png";
+import howItWorksImg from "@/assets/landing-how-it-works.png";
+import businessCaseImg from "@/assets/landing-business-case.png";
 
 const brandBlue = "#2b68ff";
 const darkNavy = "#0b1220";
