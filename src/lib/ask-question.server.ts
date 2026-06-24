@@ -256,7 +256,9 @@ async function callSynthesizer(args: {
     ? KB_SYNTH_INSTRUCTIONS
     : "";
 
-  const instructions = `You are answering a bootcamp student. You have NO tools and NO outside knowledge.
+  const instructions = `Today's date is ${new Date().toLocaleDateString("en-ZA", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.
+
+You are answering a bootcamp student. You have NO tools and NO outside knowledge.
 
 You may ONLY use the EVIDENCE block below. Do not infer beyond it, do not use prior knowledge of chemistry, math, the world, or anything else.
 
