@@ -158,18 +158,8 @@ function HeroSection() {
           </p>
         </div>
 
-        <div className="relative flex justify-center lg:justify-end">
-          <div className="w-full max-w-sm rounded-[2.5rem] border border-[#e8e8e6] bg-[#f4f4f2] p-3 shadow-2xl sm:max-w-md lg:max-w-lg">
-            <img
-              src={heroPhone}
-              alt="WhatsApp conversation with the BootChatter AI assistant"
-              width={600}
-              height={1000}
-              loading="eager"
-              decoding="async"
-              className="h-auto w-full rounded-[2rem]"
-            />
-          </div>
+        <div className="flex justify-center lg:justify-end">
+          <ChatMockup />
         </div>
       </div>
     </section>
