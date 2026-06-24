@@ -326,6 +326,57 @@ async function runFileSearch(args: {
 
 // ---------- Main entry ----------
 
+const SOCIAL_REPLY =
+  "Got it! 😊 Feel free to ask me anything about your course materials.";
+
+async function classifyMessageIntent(
+  question: string,
+): Promise<"SOCIAL" | "QUESTION" | null> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) return null;
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 5000);
+
+  try {
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      signal: controller.signal,
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0,
+        max_tokens: 60,
+        messages: [
+          {
+            role: "system",
+            content:
+              "Is this message a casual/social statement (greetings, acknowledgements, thanks, confirmations like 'ok', 'noted', 'got it', 'thanks', or standalone emojis like 👍 😊 🙏) rather than a question about course content? Reply with only: SOCIAL or QUESTION.",
+          },
+          { role: "user", content: question },
+        ],
+      }),
+    });
+
+    if (!res.ok) return null;
+
+    const data = (await res.json()) as {
+      choices?: { message?: { content?: string } }[];
+    };
+    const label = (data.choices?.[0]?.message?.content ?? "").trim().toUpperCase();
+    if (label === "SOCIAL" || label.startsWith("SOCIAL")) return "SOCIAL";
+    if (label === "QUESTION" || label.startsWith("QUESTION")) return "QUESTION";
+    return null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 export async function askQuestion(opts: {
   studentId: string;
   bootcampId: string;
@@ -335,6 +386,27 @@ export async function askQuestion(opts: {
   includeDebug?: boolean;
 }): Promise<AskResult> {
   const log = opts.log ?? true;
+
+  const intent = await classifyMessageIntent(opts.question);
+  if (intent === "SOCIAL") {
+    const { data: student } = await supabaseAdmin
+      .from("students")
+      .select("first_name, last_name")
+      .eq("id", opts.studentId)
+      .maybeSingle();
+
+    return {
+      question_id: null,
+      answer: SOCIAL_REPLY,
+      confidence: 1,
+      retrieval_method: "fallback",
+      source_lessons: [],
+      student: {
+        first_name: student?.first_name ?? null,
+        last_name: student?.last_name ?? null,
+      },
+    };
+  }
 
   const { data: student } = await supabaseAdmin
     .from("students")
