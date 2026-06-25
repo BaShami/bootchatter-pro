@@ -1,6 +1,6 @@
 import mammoth from "mammoth";
 
-const MAX_EXTRACTED_CHARS = 20_000;
+const MAX_EXTRACTED_CHARS = 150_000;
 
 async function extractPdfText(buffer: Buffer): Promise<string> {
   const { getDocument } = await import("pdfjs-dist/legacy/build/pdf.mjs");
